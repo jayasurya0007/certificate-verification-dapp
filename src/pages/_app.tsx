@@ -7,14 +7,19 @@ import { EthereumProvider } from '@/contexts/EthereumContext';
 import { NetworkProvider } from '@/contexts/NetworkContext';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import NavBar from '@/components/NavBar';
-
+import ProfilePreview from '@/components/ProfilePreview';
+import ProviderSwitcher from '@/components/ProviderSwitcher';
+import ConnectButton from '@/components/ConnectButton';
+import { useEthereum } from '@/contexts/EthereumContext';
+import AccountDisplay from '@/components/AccountDisplay';
 /**
  * The root component of this application. It wraps all pages
  * with the context providers and a consistent layout.
  *
  * @param { Component, pageProps } - Current page and its properties.
  */
-function LUKSOdAppBoilerplate({ Component, pageProps }: AppProps) {
+function LUKSOproject({ Component, pageProps }: AppProps) {
+  const { account } = useEthereum();
   return (
     <EthereumProvider>
       <NetworkProvider>
@@ -26,7 +31,8 @@ function LUKSOdAppBoilerplate({ Component, pageProps }: AppProps) {
         </ProfileProvider>
       </NetworkProvider>
     </EthereumProvider>
+     
   );
 }
 
-export default LUKSOdAppBoilerplate;
+export default LUKSOproject;
