@@ -22,15 +22,14 @@ function LUKSOproject({ Component, pageProps }: AppProps) {
   const { account } = useEthereum();
   return (
     <EthereumProvider>
-      {/* <NetworkProvider>
+      <NetworkProvider>
         <ProfileProvider>
           <RootLayout>
             <NavBar />
             <Component {...pageProps} />
           </RootLayout>
         </ProfileProvider>
-      </NetworkProvider> */}
-      <NavBar />
+      </NetworkProvider>
     </EthereumProvider>
      
   );
