@@ -2,6 +2,231 @@
   "version": "3.4",
   "log": [
     {
+      "contracts/UserRegistry.sol:UserRegistry": {
+        "src": "contracts\\UserRegistry.sol:4",
+        "version": {
+          "withMetadata": "8885e66ac5c0f74d68ccdf8345ff8af4969d230c13ddcb23f8ab95b0d990f463",
+          "withoutMetadata": "de207bfd7222a35d5fe6f584be624ae493428be2639037168e13c2afc3d231c2",
+          "linkedWithoutMetadata": "de207bfd7222a35d5fe6f584be624ae493428be2639037168e13c2afc3d231c2"
+        },
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "registerUser(string,string)",
+          "getAllUsers()",
+          "getUser(address)",
+          "isUserRegistered(address)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [
+            {
+              "label": "users",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_mapping(t_address,t_struct(User)6_storage)",
+              "contract": "UserRegistry",
+              "src": "contracts\\UserRegistry.sol:10"
+            },
+            {
+              "label": "registeredAddresses",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_array(t_address)dyn_storage",
+              "contract": "UserRegistry",
+              "src": "contracts\\UserRegistry.sol:18"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            },
+            "t_array(t_address)dyn_storage": {
+              "label": "address[]",
+              "numberOfBytes": "32"
+            },
+            "t_mapping(t_address,t_struct(User)6_storage)": {
+              "label": "mapping(address => struct UserRegistry.User)",
+              "numberOfBytes": "32"
+            },
+            "t_string_storage": {
+              "label": "string",
+              "numberOfBytes": "32"
+            },
+            "t_struct(User)6_storage": {
+              "label": "struct UserRegistry.User",
+              "members": [
+                {
+                  "label": "role",
+                  "type": "t_string_storage",
+                  "offset": 0,
+                  "slot": "0"
+                },
+                {
+                  "label": "metadataHash",
+                  "type": "t_string_storage",
+                  "offset": 0,
+                  "slot": "1"
+                }
+              ],
+              "numberOfBytes": "64"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true,
+          "namespaces": {}
+        },
+        "solcVersion": "0.8.28"
+      }
+    },
+    {
+      "contracts/UserRegistry.sol:UserRegistry": {
+        "src": "contracts\\UserRegistry.sol:4",
+        "version": {
+          "withMetadata": "2253dcb10805425f19359e2a158406b4937ea52285948281ba7f1c379dd8b095",
+          "withoutMetadata": "cc502aa6237b56bc0f6859b95eb0dd9d5926dc60fe2c19ac2c4dc93616287218",
+          "linkedWithoutMetadata": "cc502aa6237b56bc0f6859b95eb0dd9d5926dc60fe2c19ac2c4dc93616287218"
+        },
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "registerUser(string,string)",
+          "getAllUsers()",
+          "getUser(address)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [
+            {
+              "label": "users",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_mapping(t_address,t_struct(User)6_storage)",
+              "contract": "UserRegistry",
+              "src": "contracts\\UserRegistry.sol:10"
+            },
+            {
+              "label": "registeredAddresses",
+              "offset": 0,
+              "slot": "1",
+              "type": "t_array(t_address)dyn_storage",
+              "contract": "UserRegistry",
+              "src": "contracts\\UserRegistry.sol:18"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            },
+            "t_array(t_address)dyn_storage": {
+              "label": "address[]",
+              "numberOfBytes": "32"
+            },
+            "t_mapping(t_address,t_struct(User)6_storage)": {
+              "label": "mapping(address => struct UserRegistry.User)",
+              "numberOfBytes": "32"
+            },
+            "t_string_storage": {
+              "label": "string",
+              "numberOfBytes": "32"
+            },
+            "t_struct(User)6_storage": {
+              "label": "struct UserRegistry.User",
+              "members": [
+                {
+                  "label": "role",
+                  "type": "t_string_storage",
+                  "offset": 0,
+                  "slot": "0"
+                },
+                {
+                  "label": "metadataHash",
+                  "type": "t_string_storage",
+                  "offset": 0,
+                  "slot": "1"
+                }
+              ],
+              "numberOfBytes": "64"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true,
+          "namespaces": {}
+        },
+        "solcVersion": "0.8.28"
+      }
+    },
+    {
+      "contracts/UserRegistry.sol:UserRegistry": {
+        "src": "contracts\\UserRegistry.sol:4",
+        "version": {
+          "withMetadata": "8477cb049b0eab3924c2a54b3db7dfca11ee99a930abce2eb0a4d3a7ad0aa273",
+          "withoutMetadata": "339500a62519b09c1cea6cd622fd86a299c8d2b8bf0efb8f200cfe3ba8f63cc1",
+          "linkedWithoutMetadata": "339500a62519b09c1cea6cd622fd86a299c8d2b8bf0efb8f200cfe3ba8f63cc1"
+        },
+        "inherit": [],
+        "libraries": [],
+        "methods": [
+          "registerUser(string,string)",
+          "getUser(address)"
+        ],
+        "linkReferences": [],
+        "errors": [],
+        "layout": {
+          "storage": [
+            {
+              "label": "users",
+              "offset": 0,
+              "slot": "0",
+              "type": "t_mapping(t_address,t_struct(User)6_storage)",
+              "contract": "UserRegistry",
+              "src": "contracts\\UserRegistry.sol:10"
+            }
+          ],
+          "types": {
+            "t_address": {
+              "label": "address",
+              "numberOfBytes": "20"
+            },
+            "t_mapping(t_address,t_struct(User)6_storage)": {
+              "label": "mapping(address => struct UserRegistry.User)",
+              "numberOfBytes": "32"
+            },
+            "t_string_storage": {
+              "label": "string",
+              "numberOfBytes": "32"
+            },
+            "t_struct(User)6_storage": {
+              "label": "struct UserRegistry.User",
+              "members": [
+                {
+                  "label": "role",
+                  "type": "t_string_storage",
+                  "offset": 0,
+                  "slot": "0"
+                },
+                {
+                  "label": "metadataHash",
+                  "type": "t_string_storage",
+                  "offset": 0,
+                  "slot": "1"
+                }
+              ],
+              "numberOfBytes": "64"
+            }
+          },
+          "layoutVersion": "1.2",
+          "flat": true,
+          "namespaces": {}
+        },
+        "solcVersion": "0.8.28"
+      }
+    },
+    {
       "@erc725/smart-contracts/contracts/interfaces/IERC725Y.sol:IERC725Y": {
         "src": "@erc725\\smart-contracts\\contracts\\interfaces\\IERC725Y.sol:12",
         "inherit": [

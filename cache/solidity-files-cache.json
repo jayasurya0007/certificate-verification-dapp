@@ -234,45 +234,6 @@
         "IERC20Metadata"
       ]
     },
-    "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\contracts\\CertificateRegistry.sol": {
-      "lastModificationDate": 1743876398341,
-      "contentHash": "456cfbc637463ae7f6a6c304507b7f2a",
-      "sourceName": "contracts/CertificateRegistry.sol",
-      "solcConfig": {
-        "version": "0.8.28",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "storageLayout"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@erc725/smart-contracts/contracts/interfaces/IERC725Y.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "CertificateRegistry"
-      ]
-    },
     "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\node_modules\\@erc725\\smart-contracts\\contracts\\interfaces\\IERC725Y.sol": {
       "lastModificationDate": 1743871389563,
       "contentHash": "0f2878cc98fb0bc8838faef702816d2e",
@@ -347,6 +308,43 @@
       ],
       "artifacts": [
         "IERC165"
+      ]
+    },
+    "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\contracts\\UserRegistry.sol": {
+      "lastModificationDate": 1743888785127,
+      "contentHash": "6607724d25261eb29dbbe798a140cbfc",
+      "sourceName": "contracts/UserRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "UserRegistry"
       ]
     }
   }
