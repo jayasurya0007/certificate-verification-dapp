@@ -17,12 +17,12 @@ const NavBar: React.FC = () => {
                 href="/"
                 className="flex items-center py-5 px-2 text-gray-700 hover:text-gray-900"
               >
-                <span className="font-bold ml-2">LUKSO dApp Boilerplate</span>
+                <span className="font-bold ml-2">LUKSO Project</span>
               </Link>
             </div>
           </div>
           <div className="hidden md:flex items-center space-x-1">
-            <Link
+            {/* <Link
               href="/components"
               className="py-5 px-3 text-gray-700 hover:text-gray-900"
             >
@@ -39,7 +39,7 @@ const NavBar: React.FC = () => {
               className="py-5 px-3 text-gray-700 hover:text-gray-900"
             >
               Utility
-            </Link>
+            </Link> */}
             <ConnectButton />
           </div>
         </div>
