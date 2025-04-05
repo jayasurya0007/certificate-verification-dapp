@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import React, { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
 import { useEthereum } from '@/contexts/EthereumContext';
 import '@/app/globals.css';
@@ -8,17 +7,6 @@ import { EthereumProvider } from '@/contexts/EthereumContext';
 import { NetworkProvider } from '@/contexts/NetworkContext';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import NavBar from '@/components/NavBar';
-<<<<<<< Updated upstream
-import ProfilePreview from '@/components/ProfilePreview';
-import ProviderSwitcher from '@/components/ProviderSwitcher';
-import ConnectButton from '@/components/ConnectButton';
-import { useEthereum } from '@/contexts/EthereumContext';
-import AccountDisplay from '@/components/AccountDisplay';
-// app/register/page.tsx
-import RoleSelection from '@/components/Registeration/RForm';
-import StudentDashboard from '@/components/StudentDashboard/StudentDashboard';
-import ProviderDashboard from '@/components/ProviderDashboard/ProviderDashboard';
-=======
 import SplitRegistrationForm from '@/components/Registeration/SplitRegistrationForm';
 import UserDashboard from '@/components/Dashboard/UserDashboard';
 import UserRegistryABI from '../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
@@ -85,7 +73,6 @@ const ConditionalContent = () => {
   // Render based on registration status
   return isRegistered ? <UserDashboard  /> : <SplitRegistrationForm />;
 };
->>>>>>> Stashed changes
 
 /**
  * The root component of this application. It wraps all pages
@@ -102,15 +89,7 @@ function LUKSOproject({ Component, pageProps }: AppProps) {
             <ConditionalContent />
           </RootLayout>
         </ProfileProvider>
-<<<<<<< Updated upstream
-      </NetworkProvider>  */}
-      <NavBar />
-      <RegisterPage />
-      <StudentDashboard/>
-      <ProviderDashboard />
-=======
       </NetworkProvider>
->>>>>>> Stashed changes
     </EthereumProvider>
   );
 }
