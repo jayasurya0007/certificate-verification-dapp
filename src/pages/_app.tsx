@@ -11,12 +11,14 @@ import SplitRegistrationForm from '@/components/Registeration/SplitRegistrationF
 import UserDashboard from '@/components/Dashboard/UserDashboard';
 import UserRegistryABI from '../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
 import { ethers } from 'ethers';
+import StudentDashboard from '@/components/StudentDashboard/StudentDashboard';
+import ProviderDashboard from '@/components/ProviderDashboard/ProviderDashboard';
 
 const ConditionalContent = () => {
   const { account, provider } = useEthereum();
   const [isRegistered, setIsRegistered] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState({ role: '', metadataHash: '' });
+  const [userRole, setUserRole] = useState<'student' | 'provider' | ''>('');
 
   useEffect(() => {
     const checkRegistrationStatus = async () => {
@@ -28,20 +30,19 @@ const ConditionalContent = () => {
             provider
           );
           
-          // Use the getUser method from your contract
-          const [role, metadataHash] = await contract.getUser(account);
-          
-          // If role exists/not empty, user is registered
-          const userRegistered = role && role.length > 0;
+          // Get user role directly from contract
+          const [role] = await contract.getUser(account);
+          const registered = await contract.isUserRegistered(account);
           
           console.log('User role:', role);
-          console.log('Registered:', userRegistered);
+          console.log('Registered:', registered);
           
-          setIsRegistered(userRegistered);
-          setUserData({ role, metadataHash });
+          setIsRegistered(registered);
+          setUserRole(role.toLowerCase() as 'student' | 'provider');
         } catch (error) {
           console.error('Registration check error:', error);
           setIsRegistered(false);
+          setUserRole('');
         }
       }
       setLoading(false);
@@ -58,22 +59,36 @@ const ConditionalContent = () => {
     );
   }
 
-  // If not connected, show a message
   if (!account) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-bold mb-4">Please connect your wallet</h2>
-          {/* You could add your ConnectButton component here */}
         </div>
       </div>
     );
   }
 
-  // Render based on registration status
-  return isRegistered ? <UserDashboard  /> : <SplitRegistrationForm />;
-};
+  // Handle different roles
+  if (isRegistered) {
+    switch(userRole) {
+      case 'student':
+        return <StudentDashboard />;
+      case 'provider':
+        return <ProviderDashboard />;
+      default:
+        return (
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-red-500">
+              Error: Unknown user role detected
+            </div>
+          </div>
+        );
+    }
+  }
 
+  return <SplitRegistrationForm />;
+};
 /**
  * The root component of this application. It wraps all pages
  * with the context providers and a consistent layout.
@@ -95,5 +110,3 @@ function LUKSOproject({ Component, pageProps }: AppProps) {
 }
 
 export default LUKSOproject;
-
-
