@@ -14,6 +14,8 @@ import { useEthereum } from '@/contexts/EthereumContext';
 import AccountDisplay from '@/components/AccountDisplay';
 // app/register/page.tsx
 import RoleSelection from '@/components/Registeration/RForm';
+import StudentDashboard from '@/components/StudentDashboard/StudentDashboard';
+import ProviderDashboard from '@/components/ProviderDashboard/ProviderDashboard';
 
 export function RegisterPage() {
   return <RoleSelection />;
@@ -38,6 +40,8 @@ function LUKSOproject({ Component, pageProps }: AppProps) {
       </NetworkProvider>  */}
       <NavBar />
       <RegisterPage />
+      <StudentDashboard/>
+      <ProviderDashboard />
     </EthereumProvider>
      
   );
