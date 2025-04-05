@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppProps } from 'next/app';
 import { useEthereum } from '@/contexts/EthereumContext';
 import '@/app/globals.css';
