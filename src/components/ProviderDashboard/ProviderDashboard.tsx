@@ -216,7 +216,7 @@ export default function ProviderDashboard() {
             ) : (
               <div className="p-8 text-center">
                 <p className="text-gray-500">No pending requests</p>
-                <p className="text-sm text-gray-400 mt-1">Students' requests will appear here</p>
+                <p className="text-sm text-gray-400 mt-1">Students&apos; requests will appear here</p>
               </div>
             )}
 
@@ -258,7 +258,7 @@ export default function ProviderDashboard() {
               <div className="text-center py-8">
                 <FiCheck className="mx-auto text-green-500 text-4xl mb-3" />
                 <h3 className="text-lg font-medium mb-1">Certificate NFT Created!</h3>
-                <p className="text-gray-600 mb-4">The NFT has been sent to the student's Universal Profile</p>
+                <p className="text-gray-600 mb-4">The NFT has been sent to the student&apos;s Universal Profile</p>
                 <button 
                   onClick={() => setIsSuccess(false)}
                   className="text-sm bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
