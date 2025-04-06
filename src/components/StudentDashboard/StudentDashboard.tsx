@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { useEthereum } from '@/contexts/EthereumContext';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
 import CertificateNFTABI from '../../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
+import CertificateSearch from '../CertificateSearch/CertificateSearch';
 
 interface Certificate {
   id: string;
@@ -229,7 +230,9 @@ const StudentDashboard = () => {
           <p>Please connect your wallet to view your dashboard</p>
         </div>
       )}
+      <CertificateSearch />
     </div>
+    
   );
 };
 

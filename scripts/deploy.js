@@ -5,7 +5,7 @@ async function main() {
   console.log('Deploying contracts with the account:', deployer.address);
 
   // Get the contract factory
-  const CertificateRegistry = await ethers.getContractFactory('CertificateNFT');
+  const CertificateRegistry = await ethers.getContractFactory('UserRegistry');
 
   // Set gas price and gas limit
   const gasPrice = ethers.parseUnits('10', 'gwei'); // Adjust as needed

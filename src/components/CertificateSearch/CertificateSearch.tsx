@@ -15,18 +15,15 @@ interface Certificate {
 }
 
 const CertificateSearch = () => {
-  const { provider, account } = useEthereum();
+  const { provider } = useEthereum();
   const [searchAddress, setSearchAddress] = useState('');
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
 
-  // Helper function to validate Ethereum addresses
-  const isValidAddress = (address: string) => {
-    return ethers.isAddress(address);
-  };
+  const isValidAddress = (address: string) => ethers.isAddress(address);
 
   const handleSearch = async () => {
     if (!provider || !isValidAddress(searchAddress)) {
@@ -37,35 +34,29 @@ const CertificateSearch = () => {
     try {
       setIsLoading(true);
       setError('');
+      setCertificates([]);
+
       const signer = await provider.getSigner();
-      
       const contract = new ethers.Contract(
         certificateNFTAddress,
         CertificateNFTABI.abi,
         signer
       );
 
-      // Check if current user is authorized
-      const isAuthorized = await contract.authorizedInstitutes(account);
-      if (!isAuthorized) {
-        setError('Only authorized institutes can search student certificates');
+      // No authorization check — open for all users to view
+
+      const certificateIds: bigint[] = await contract.getStudentCertificates(searchAddress);
+
+      if (certificateIds.length === 0) {
+        setCertificates([]);
         return;
       }
 
-      // Get certificate IDs for the student
-      const certificateIds = await contract.getStudentCertificates(searchAddress);
-      
-      // Fetch details for each certificate
       const certificatesData = await Promise.all(
         certificateIds.map(async (id: bigint) => {
-          const [
-            name,
-            institute,
-            issueDate,
-            certificateType,
-            student
-          ] = await contract.getCertificateDetails(id);
-          
+          const [name, institute, issueDate, certificateType, student] =
+            await contract.getCertificateDetails(id);
+
           const tokenURI = await contract.tokenURI(id);
           let metadata = null;
 
@@ -73,8 +64,8 @@ const CertificateSearch = () => {
             const metadataHash = tokenURI.replace('ipfs://', '');
             const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
             metadata = await response.json();
-          } catch (metadataError) {
-            console.error('Error fetching metadata:', metadataError);
+          } catch (err) {
+            console.error('Metadata fetch error:', err);
           }
 
           return {
@@ -93,29 +84,24 @@ const CertificateSearch = () => {
       setCertificates(certificatesData);
     } catch (err) {
       console.error('Search error:', err);
-      setError('Error fetching certificates. Please try again.');
+      setError('Something went wrong while fetching certificates.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Helper to convert IPFS URLs
-  const convertIpfsUrl = (ipfsUrl: string) => {
-    if (ipfsUrl.startsWith('ipfs://')) {
-      return `https://ipfs.io/ipfs/${ipfsUrl.split('ipfs://')[1]}`;
-    }
-    return ipfsUrl;
-  };
+  const convertIpfsUrl = (url: string) =>
+    url.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${url.split('ipfs://')[1]}` : url;
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-6">
-      <h2 className="text-xl font-semibold mb-4">Search Student Certificates</h2>
-      
+      <h2 className="text-xl font-semibold mb-4">Search Certificates</h2>
+
       <div className="flex gap-4 mb-4">
         <input
           type="text"
           className="flex-1 p-2 border rounded"
-          placeholder="Enter student wallet address (0x...)"
+          placeholder="Enter wallet address (0x...)"
           value={searchAddress}
           onChange={(e) => setSearchAddress(e.target.value)}
         />
@@ -148,27 +134,27 @@ const CertificateSearch = () => {
                   <p className="text-sm text-gray-600 break-all">{cert.student}</p>
                 </div>
               </div>
-              
+
               {cert.metadata && (
-        <div className="mt-4">
-          <a
-            href={convertIpfsUrl(cert.tokenURI)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline"
-          >
-            View Certificate Metadata
-          </a>
-          
-          {cert.metadata.image && (
-            <div className="mt-2">
-              <p className="font-medium">Certificate Preview:</p>
-              <img
-                src={convertIpfsUrl(cert.metadata.image)}
-                alt="Certificate preview"
-                className="mt-2 max-w-xs rounded-lg shadow"
-              />
-            </div>
+                <div className="mt-4">
+                  <a
+                    href={convertIpfsUrl(cert.tokenURI)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    View Certificate Metadata
+                  </a>
+
+                  {cert.metadata.image && (
+                    <div className="mt-2">
+                      <p className="font-medium">Certificate Preview:</p>
+                      <img
+                        src={convertIpfsUrl(cert.metadata.image)}
+                        alt="Certificate preview"
+                        className="mt-2 max-w-xs rounded-lg shadow"
+                      />
+                    </div>
                   )}
                 </div>
               )}
