@@ -21,14 +21,12 @@ const StudentDashboard = () => {
       if (!account || !provider) return;
 
       try {
-        const signer =await provider.getSigner();
+        const signer = await provider.getSigner();
         const userRegistry = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
         const certificateNFT = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, provider);
 
         // Fetch metadata IPFS hash
         const [role, ipfsHash] = await userRegistry.getUser(account);
-        console.log('Role:', role);
-        console.log('IPFS Hash:', ipfsHash);
         if (!ipfsHash) {
           console.warn('Invalid IPFS hash received.');
           return;
@@ -58,9 +56,19 @@ const StudentDashboard = () => {
     if (!account || !provider) return;
 
     try {
-      const signer =await provider.getSigner();
-      const contract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
-      const tx = await contract.requestCertificate(providerAddress, certificateName, message);
+      const signer = await provider.getSigner();
+      const userRegistry = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
+      const certificateNFT = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+      
+      // Get student's IPFS metadata hash
+      const [, metadataHash] = await userRegistry.getUser(account);
+      
+      const tx = await certificateNFT.requestCertificate(
+        providerAddress, 
+        certificateName, 
+        message,
+        metadataHash
+      );
       await tx.wait();
       alert('Certificate request sent successfully.');
     } catch (error) {

@@ -850,8 +850,8 @@
       "artifacts": []
     },
     "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\contracts\\CertificateNFT.sol": {
-      "lastModificationDate": 1743929322591,
-      "contentHash": "b42128cab5f4029e084267f6f95cd874",
+      "lastModificationDate": 1743933652104,
+      "contentHash": "3ff2ff2929e0073f2b9c39372b12d7cd",
       "sourceName": "contracts/CertificateNFT.sol",
       "solcConfig": {
         "version": "0.8.28",
