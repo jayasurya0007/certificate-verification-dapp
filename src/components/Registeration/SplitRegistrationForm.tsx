@@ -4,9 +4,9 @@ import { useEthereum } from '@/contexts/EthereumContext';
 import { ethers } from 'ethers';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '../../../utils/ipfs';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
-import { useRouter } from 'next/router';
-import StudentDashboard from '../StudentDashboard/OldStu';
-import ProviderDashboard from '../ProviderDashboard/OldProv';
+
+import StudentDashboard from '../StudentDashboard/StudentDashboard';
+import ProviderDashboard from '../ProviderDashboard/ProviderDashboard';
 
 // Types
 interface StudentFormData {
@@ -43,12 +43,12 @@ const Spinner = () => (
 );
 
 export default function SplitRegistrationForm() {
-  const router = useRouter();
-
   const { account, provider } = useEthereum();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [userRole, setUserRole] = useState<'student' | 'provider' | null>(null);
 
   const validateForm = () => {
     if (formData.role === 'student') {
@@ -117,13 +117,9 @@ export default function SplitRegistrationForm() {
       const tx = await contract.registerUser(formData.role, cid);
       await tx.wait();
 
-      alert('Registration successful!');
-      setFormData(initialFormState); 
-      if (formData.role === 'student') {
-        return <StudentDashboard />;
-      } else if(formData.role === 'provider') {
-        return <ProviderDashboard />;
-      }
+      setRegistrationComplete(true);
+      setUserRole(formData.role);
+      setFormData(initialFormState);
     } catch (error) {
       console.error('Registration error:', error);
       setError(error instanceof Error ? error.message : 'Registration failed');
@@ -143,6 +139,11 @@ export default function SplitRegistrationForm() {
       role
     });
   };
+
+  // After successful registration, show the appropriate dashboard
+  if (registrationComplete && userRole) {
+    return userRole === 'student' ? <StudentDashboard /> : <ProviderDashboard />;
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
