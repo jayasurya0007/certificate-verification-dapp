@@ -22,6 +22,7 @@ const StudentDashboard = () => {
   const [certificateName, setCertificateName] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  
 
   const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
   const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
@@ -41,7 +42,7 @@ const StudentDashboard = () => {
         const certificateNFT = new ethers.Contract(
           certificateNFTAddress, 
           CertificateNFTABI.abi, 
-          provider
+          signer
         );
 
         // Fetch student profile from IPFS
@@ -63,7 +64,7 @@ const StudentDashboard = () => {
               id: id.toString(), 
               name, 
               institute, 
-              issueDate: issueDate.toNumber(), 
+              issueDate: issueDate, 
               certificateType, 
               student,
               tokenURI
@@ -153,7 +154,7 @@ const StudentDashboard = () => {
                     <h3 className="font-bold text-lg">{cert.name}</h3>
                     <p>Issued by: {cert.institute}</p>
                     <p>Type: {cert.certificateType}</p>
-                    <p>Issued on: {new Date(cert.issueDate * 1000).toLocaleDateString()}</p>
+                    <p>Issued on: {new Date(Number(cert.issueDate)* 1000).toLocaleDateString()}</p>
                     <a 
                       href={`https://ipfs.io/ipfs/${cert.tokenURI.split('ipfs://')[1]}`}
                       target="_blank"
