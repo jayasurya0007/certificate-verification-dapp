@@ -7,6 +7,7 @@ import OwnerDashboard from '../ProviderDashboard/OwnerDashboard'; // Import the 
 import SplitRegistrationForm from '@/components/Registeration/SplitRegistrationForm';
 import { ethers } from 'ethers';
 import CertificateNFTABI from '../../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
+import Home from '../Opening/Home';
 
 const ConditionalContent = () => {
   const { account, provider } = useEthereum();
@@ -54,11 +55,7 @@ const ConditionalContent = () => {
 
   if (!account) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Please connect your wallet</h2>
-        </div>
-      </div>
+   <Home/>
     );
   }
 

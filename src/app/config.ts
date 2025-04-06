@@ -3,7 +3,7 @@
  */
 export const config = {
   metadata: {
-    title: 'LUKSO dApp Boilerplate',
+    title: 'LUKSO dApp',
     description: 'Open Source LUKSO Dev Stack',
     url: 'https://boilerplate.lukso.tech/',
     icon: '/lyx_token_symbol.svg',

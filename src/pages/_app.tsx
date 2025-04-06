@@ -6,9 +6,10 @@ import RootLayout from '@/app/layout';
 import { EthereumProvider } from '@/contexts/EthereumContext';
 import { NetworkProvider } from '@/contexts/NetworkContext';
 import { ProfileProvider } from '@/contexts/ProfileContext';
-import NavBar from '@/components/NavBar';
+import Home from '../components/Opening/NavBar';
 import ConditionalContent from '../components/ConditionalContent/ConditionalContent';
 import { ContractContextProvider } from '@/contexts/ContractContext';
+import Navbar from '../components/Opening/NavBar';
 
 
 function LUKSOproject({ Component, pageProps }: AppProps) {
@@ -18,7 +19,7 @@ function LUKSOproject({ Component, pageProps }: AppProps) {
         <ProfileProvider>
           <ContractContextProvider>
             <RootLayout>
-              <NavBar />
+              <Navbar/>
               <ConditionalContent />
             </RootLayout>
           </ContractContextProvider>
