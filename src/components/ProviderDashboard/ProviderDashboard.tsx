@@ -38,10 +38,31 @@ const ProviderDashboard = () => {
   const [providerMetadata, setProviderMetadata] = useState<ProviderMetadata | null>(null);
   const [certificateInputs, setCertificateInputs] = useState<{[key: number]: CertificateInput}>({});
   const [isLoading, setIsLoading] = useState(true);
-
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
   const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
 
+  useEffect(() => {
+    const checkAuthorization = async () => {
+      if (!provider || !account) return;
+      
+      try {
+        const signer = await provider.getSigner();
+        const certContract = new ethers.Contract(
+          certificateNFTAddress, 
+          CertificateNFTABI.abi, 
+          signer
+        );
+        
+        const authorized = await certContract.authorizedInstitutes(account);
+        setIsAuthorized(authorized);
+      } catch (err) {
+        console.error('Error checking authorization:', err);
+      }
+    };
+  
+    checkAuthorization();
+  }, [provider, account]);
   const fetchRequests = async () => {
     if (!provider || !account) return;
     
@@ -133,12 +154,18 @@ const ProviderDashboard = () => {
   const handleApprove = async (requestId: number) => {
     if (!provider || !account || !providerMetadata) return;
     
+    // Check authorization first
+    if (!isAuthorized) {
+      alert('Your account is not authorized to approve certificates. Please contact the contract owner.');
+      return;
+    }
+  
     const input = certificateInputs[requestId];
     if (!input?.certificateType || !input?.tokenURI) {
       alert('Please fill in all certificate details');
       return;
     }
-
+  
     try {
       const signer = await provider.getSigner();
       const certContract = new ethers.Contract(
@@ -146,7 +173,7 @@ const ProviderDashboard = () => {
         CertificateNFTABI.abi, 
         signer
       );
-
+  
       const tx = await certContract.approveCertificateRequest(
         requestId,
         input.certificateType,
@@ -174,12 +201,20 @@ const ProviderDashboard = () => {
       {account ? (
         <>
           {providerMetadata && (
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-xl font-semibold mb-4">Your Institution</h2>
-              <p className="font-medium">Name: {providerMetadata.institutionName}</p>
-              <p className="font-medium">Accreditation #: {providerMetadata.accreditationNumber}</p>
-            </div>
-          )}
+  <div className="bg-white rounded-lg shadow p-6 mb-6">
+    <h2 className="text-xl font-semibold mb-4">Your Institution</h2>
+    <p className="font-medium">Name: {providerMetadata.institutionName}</p>
+    <p className="font-medium">Accreditation #: {providerMetadata.accreditationNumber}</p>
+    <p className={`font-medium ${isAuthorized ? 'text-green-600' : 'text-red-600'}`}>
+      Status: {isAuthorized ? 'Authorized' : 'Not Authorized'}
+    </p>
+    {!isAuthorized && (
+      <p className="text-sm text-gray-600 mt-2">
+        Contact the certificate system administrator to get authorized.
+      </p>
+    )}
+  </div>
+)}
 
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Pending Certificate Requests</h2>
