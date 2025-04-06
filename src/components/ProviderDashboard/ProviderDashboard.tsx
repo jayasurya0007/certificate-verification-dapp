@@ -4,7 +4,7 @@ import { useEthereum } from '@/contexts/EthereumContext';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
 import CertificateNFTABI from '../../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
 import { uploadJSONToIPFS, uploadFileToIPFS } from '../../../utils/ipfs';
-import { FiUser, FiMail, FiBook, FiFileText, FiCheckCircle, FiXCircle, FiUpload } from 'react-icons/fi';
+import { FiUser, FiHome, FiFileText, FiCheckCircle, FiXCircle, FiUpload, FiShield, FiAward } from 'react-icons/fi';
 
 interface CertificateRequest {
   id: number;
@@ -269,7 +269,7 @@ const ProviderDashboard = () => {
             {providerMetadata && (
               <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
                 <h2 className="text-xl font-semibold mb-4 flex items-center">
-                  <FiBook className="mr-2 text-[#8A2BE2]" />
+                  <FiHome className="mr-2 text-[#8A2BE2]" />
                   Your Institution
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -285,7 +285,7 @@ const ProviderDashboard = () => {
                   </div>
                   <div>
                     <p className={`flex items-center ${isAuthorized ? 'text-green-600' : 'text-red-600'}`}>
-                      <FiCheckCircle className="mr-2" />
+                      <FiShield className="mr-2" />
                       <span className="font-medium">Status:</span> {isAuthorized ? 'Authorized' : 'Not Authorized'}
                     </p>
                     {!isAuthorized && (
@@ -301,7 +301,7 @@ const ProviderDashboard = () => {
             {/* Requests Section */}
             <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
               <h2 className="text-xl font-semibold mb-6 flex items-center">
-                <FiMail className="mr-2 text-[#8A2BE2]" />
+                <FiAward className="mr-2 text-[#8A2BE2]" />
                 Pending Certificate Requests
               </h2>
               
@@ -413,24 +413,24 @@ const ProviderDashboard = () => {
                                 }}
                                 className="hidden"
                               />
-                              {certificateInputs[request.id]?.imageFile ? (
-                                <div className="flex flex-col items-center text-center">
-                                  <FiFileText className="text-3xl text-[#8A2BE2] mb-2" />
-                                  <span className="font-medium text-[#191A23]">
-                                    {certificateInputs[request.id].imageFile.name}
-                                  </span>
-                                  <span className="text-sm text-gray-500 mt-1">Click to change file</span>
-                                </div>
-                              ) : (
-                                <>
-                                  <FiUpload className="text-3xl text-[#8A2BE2] mb-3" />
-                                  <span className="text-sm text-[#191A23]/80 text-center">
-                                    Drag and drop your certificate image here<br />
-                                    or click to browse files
-                                  </span>
-                                  <span className="text-xs text-gray-500 mt-2">Supports: JPG, PNG (max 5MB)</span>
-                                </>
-                              )}
+                       {certificateInputs[request.id]?.imageFile ? (
+  <div className="flex flex-col items-center text-center">
+    <FiFileText className="text-3xl text-[#8A2BE2] mb-2" />
+    <span className="font-medium text-[#191A23]">
+      {certificateInputs[request.id]?.imageFile?.name}
+    </span>
+    <span className="text-sm text-gray-500 mt-1">Click to change file</span>
+  </div>
+) : (
+  <>
+    <FiUpload className="text-3xl text-[#8A2BE2] mb-3" />
+    <span className="text-sm text-[#191A23]/80 text-center">
+      Drag and drop your certificate image here<br />
+      or click to browse files
+    </span>
+    <span className="text-xs text-gray-500 mt-2">Supports: JPG, PNG (max 5MB)</span>
+  </>
+)}
                             </label>
                           </div>
                           
@@ -463,7 +463,7 @@ const ProviderDashboard = () => {
               ) : (
                 <div className="text-center py-12">
                   <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <FiMail className="text-3xl text-gray-400" />
+                    <FiAward className="text-3xl text-gray-400" />
                   </div>
                   <h3 className="text-lg font-medium text-gray-900">No pending requests</h3>
                   <p className="mt-1 text-gray-500">When students request certificates, they'll appear here.</p>
