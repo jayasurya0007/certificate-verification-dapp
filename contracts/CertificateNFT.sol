@@ -136,27 +136,28 @@ contract CertificateNFT is ERC721URIStorage, Ownable {
     }
 
     function approveCertificateRequest(
-        uint256 requestId,
-        string memory certificateType,
-        string memory tokenURI
-    ) external {
-        CertificateRequest storage request = certificateRequests[requestId];
+    uint256 requestId,
+    string memory certificateType,
+    string memory tokenURI,
+    string memory institute
+) external {
+    CertificateRequest storage request = certificateRequests[requestId];
 
-        require(request.student != address(0), "Invalid request");
-        require(authorizedInstitutes[msg.sender], "Not authorized to approve");
-        require(!request.approved, "Already approved");
+    require(request.student != address(0), "Invalid request");
+    require(authorizedInstitutes[msg.sender], "Not authorized to approve");
+    require(!request.approved, "Already approved");
 
-        // Mint certificate
-        issueCertificate(
-            request.student,
-            request.name,
-            certificates[_tokenIds.current()].institute,
-            certificateType,
-            tokenURI
-        );
+    issueCertificate(
+        request.student,
+        request.name,
+        institute,
+        certificateType,
+        tokenURI
+    );
 
-        request.approved = true;
+    request.approved = true;
 
-        emit CertificateRequestApproved(requestId, request.student, msg.sender);
-    }
+    emit CertificateRequestApproved(requestId, request.student, msg.sender);
+}
+
 }
