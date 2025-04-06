@@ -4,6 +4,9 @@ import { useEthereum } from '@/contexts/EthereumContext';
 import { ethers } from 'ethers';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '../../../utils/ipfs';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
+import { useRouter } from 'next/router';
+import StudentDashboard from '../StudentDashboard/OldStu';
+import ProviderDashboard from '../ProviderDashboard/OldProv';
 
 // Types
 interface StudentFormData {
@@ -40,6 +43,8 @@ const Spinner = () => (
 );
 
 export default function SplitRegistrationForm() {
+  const router = useRouter();
+
   const { account, provider } = useEthereum();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,8 +118,12 @@ export default function SplitRegistrationForm() {
       await tx.wait();
 
       alert('Registration successful!');
-      setFormData(initialFormState);
-
+      setFormData(initialFormState); 
+      if (formData.role === 'student') {
+        return <StudentDashboard />;
+      } else if(formData.role === 'provider') {
+        return <ProviderDashboard />;
+      }
     } catch (error) {
       console.error('Registration error:', error);
       setError(error instanceof Error ? error.message : 'Registration failed');
