@@ -22,6 +22,7 @@ const StudentDashboard = () => {
   const [certificateName, setCertificateName] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [loadedImages, setLoadedImages] = useState<{[key: string]: boolean}>({});
   
 
   const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
@@ -99,7 +100,7 @@ const StudentDashboard = () => {
       );
       
       // Get student's IPFS metadata hash
-      const [, metadataHash] = await userRegistry.getUser(account);
+      const [role, metadataHash] = await userRegistry.getUser(account);
       
       const tx = await certificateNFT.requestCertificate(
         providerAddress, 

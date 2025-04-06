@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import { useEthereum } from '@/contexts/EthereumContext';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
 import CertificateNFTABI from '../../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
+import { uploadJSONToIPFS, uploadFileToIPFS } from '../../../utils/ipfs';
 
 interface CertificateRequest {
   id: number;
@@ -28,7 +29,9 @@ interface ProviderMetadata {
 
 interface CertificateInput {
   certificateType: string;
-  tokenURI: string;
+  name: string;
+  description: string;
+  imageFile: File | null;
 }
 
 const ProviderDashboard = () => {
@@ -141,7 +144,11 @@ const ProviderDashboard = () => {
     fetchProviderDetails();
   }, [provider, account]);
 
-  const handleInputChange = (requestId: number, field: keyof CertificateInput, value: string) => {
+  const handleInputChange = (
+    requestId: number,
+    field: keyof CertificateInput,
+    value: string | File
+  ) => {
     setCertificateInputs(prev => ({
       ...prev,
       [requestId]: {
@@ -154,18 +161,65 @@ const ProviderDashboard = () => {
   const handleApprove = async (requestId: number) => {
     if (!provider || !account || !providerMetadata) return;
     
-    // Check authorization first
     if (!isAuthorized) {
-      alert('Your account is not authorized to approve certificates. Please contact the contract owner.');
+      alert('Your account is not authorized to approve certificates.');
       return;
     }
   
     const input = certificateInputs[requestId];
-    if (!input?.certificateType || !input?.tokenURI) {
+    if (!input?.certificateType || !input?.name || !input?.description || !input?.imageFile) {
       alert('Please fill in all certificate details');
       return;
     }
   
+    try {
+      // Upload image to IPFS
+      const { cid: imageCid } = await uploadFileToIPFS(input.imageFile);
+      const imageURI = `ipfs://${imageCid}`;
+
+      // Prepare metadata
+      const metadata = {
+        name: input.name,
+        description: input.description,
+        image: imageURI,
+        certificateType: input.certificateType,
+        institution: {
+          name: providerMetadata.institutionName,
+          accreditationNumber: providerMetadata.accreditationNumber,
+          documentCid: providerMetadata.documentCid
+        }
+      };
+
+      // Upload metadata to IPFS
+      const { cid: metadataCid } = await uploadJSONToIPFS(metadata);
+      const tokenURI = `ipfs://${metadataCid}`;
+
+      const signer = await provider.getSigner();
+      const certContract = new ethers.Contract(
+        certificateNFTAddress, 
+        CertificateNFTABI.abi, 
+        signer
+      );
+
+      const tx = await certContract.approveCertificateRequest(
+        requestId,
+        input.certificateType,
+        tokenURI,
+        providerMetadata.institutionName
+      );
+      await tx.wait();
+      
+      alert('Certificate approved successfully!');
+      fetchRequests();
+    } catch (err) {
+      console.error('Error approving request:', err);
+      alert('Failed to approve certificate request');
+    }
+  };
+
+  const handleCancel = async (requestId: number) => {
+    if (!provider || !account) return;
+
     try {
       const signer = await provider.getSigner();
       const certContract = new ethers.Contract(
@@ -173,20 +227,14 @@ const ProviderDashboard = () => {
         CertificateNFTABI.abi, 
         signer
       );
-  
-      const tx = await certContract.approveCertificateRequest(
-        requestId,
-        input.certificateType,
-        input.tokenURI,
-        providerMetadata.institutionName
-      );
+
+      const tx = await certContract.cancelCertificateRequest(requestId);
       await tx.wait();
-      
-      alert('Certificate approved successfully!');
-      fetchRequests(); // Refresh the list
+      alert('Request cancelled successfully!');
+      fetchRequests();
     } catch (err) {
-      console.error('Error approving request:', err);
-      alert('Failed to approve certificate request');
+      console.error('Error cancelling request:', err);
+      alert('Failed to cancel request');
     }
   };
 
@@ -247,39 +295,78 @@ const ProviderDashboard = () => {
                       </div>
 
                       <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Certificate Type
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border rounded"
-                            placeholder="e.g., Degree, Diploma, Certificate"
-                            onChange={(e) => handleInputChange(request.id, 'certificateType', e.target.value)}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            IPFS URI for Certificate
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full p-2 border rounded"
-                            placeholder="ipfs://..."
-                            onChange={(e) => handleInputChange(request.id, 'tokenURI', e.target.value)}
-                          />
-                        </div>
-                        
-                        <button
-                          onClick={() => handleApprove(request.id)}
-                          className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
-                          disabled={!certificateInputs[request.id]?.certificateType || 
-                                   !certificateInputs[request.id]?.tokenURI}
-                        >
-                          Approve & Issue Certificate
-                        </button>
-                      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Certificate Type
+        </label>
+        <input
+          type="text"
+          className="w-full p-2 border rounded"
+          placeholder="e.g., Degree, Diploma"
+          onChange={(e) => handleInputChange(request.id, 'certificateType', e.target.value)}
+        />
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Certificate Name
+        </label>
+        <input
+          type="text"
+          className="w-full p-2 border rounded"
+          placeholder="Certificate Name"
+          onChange={(e) => handleInputChange(request.id, 'name', e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Description
+        </label>
+        <textarea
+          className="w-full p-2 border rounded"
+          placeholder="Certificate description"
+          onChange={(e) => handleInputChange(request.id, 'description', e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Certificate Image
+        </label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              handleInputChange(request.id, 'imageFile', file);
+            }
+          }}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      
+      <div className="flex gap-2">
+        <button
+          onClick={() => handleApprove(request.id)}
+          className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
+          disabled={!certificateInputs[request.id]?.certificateType || 
+                   !certificateInputs[request.id]?.name ||
+                   !certificateInputs[request.id]?.description ||
+                   !certificateInputs[request.id]?.imageFile}
+        >
+          Approve & Issue
+        </button>
+        
+        <button
+          onClick={() => handleCancel(request.id)}
+          className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
+        >
+          Cancel Request
+        </button>
+      </div>
+    </div>
                     </div>
                   );
                 })}
