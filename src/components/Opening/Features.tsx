@@ -1,5 +1,4 @@
 import { User, FileDigit, CheckCircle } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function Features() {
   const services = [
@@ -48,11 +47,11 @@ export default function Features() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {services.map((service, index) => (
-            <Card 
-              key={index} 
+            <div
+              key={index}
               className={`${service.bgColor} ${service.borderColor} border-2 rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-2`}
             >
-              <CardContent className="p-8 h-full">
+              <div className="p-8 h-full">
                 <div className="flex flex-col h-full">
                   <div className="mb-6">
                     <service.icon className={`h-10 w-10 ${service.textColor}`} />
@@ -65,8 +64,8 @@ export default function Features() {
                   </p>
                   <div className={`w-10 h-1 ${service.textColor} opacity-50 mb-6`}></div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       </div>
