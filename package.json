@@ -19,6 +19,7 @@
     "@lukso/web3-onboard-config": "^1.1.2",
     "@openzeppelin/contracts": "^4.9.6",
     "@pinata/sdk": "^2.1.0",
+    "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-slot": "^1.1.2",
     "@types/formidable": "^3.4.5",
     "@web3-onboard/core": "^2.21.2",
