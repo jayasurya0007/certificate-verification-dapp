@@ -272,8 +272,8 @@
       ]
     },
     "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\contracts\\UserRegistry.sol": {
-      "lastModificationDate": 1743888785127,
-      "contentHash": "6607724d25261eb29dbbe798a140cbfc",
+      "lastModificationDate": 1743927949655,
+      "contentHash": "295561fad76e34eaa6f38fafdb636e69",
       "sourceName": "contracts/UserRegistry.sol",
       "solcConfig": {
         "version": "0.8.28",
@@ -306,47 +306,6 @@
       ],
       "artifacts": [
         "UserRegistry"
-      ]
-    },
-    "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\contracts\\CertificateNFT .sol": {
-      "lastModificationDate": 1743920536153,
-      "contentHash": "5f54eb28712ffd51e81a7a386b49c1fd",
-      "sourceName": "contracts/CertificateNFT .sol",
-      "solcConfig": {
-        "version": "0.8.28",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 200
-          },
-          "evmVersion": "paris",
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "storageLayout"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
-        "@openzeppelin/contracts/utils/Counters.sol",
-        "@openzeppelin/contracts/access/Ownable.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.0"
-      ],
-      "artifacts": [
-        "CertificateNFT"
       ]
     },
     "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\node_modules\\@openzeppelin\\contracts\\utils\\Counters.sol": {
@@ -889,6 +848,47 @@
         "^0.8.0"
       ],
       "artifacts": []
+    },
+    "C:\\Users\\jayas\\OneDrive\\Documents\\GitHub\\lukso_dapp\\contracts\\CertificateNFT.sol": {
+      "lastModificationDate": 1743928218540,
+      "contentHash": "0d9b1c1f83a74fcdb0f56d5ae1d0fc3d",
+      "sourceName": "contracts/CertificateNFT.sol",
+      "solcConfig": {
+        "version": "0.8.28",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "storageLayout"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
+        "@openzeppelin/contracts/utils/Counters.sol",
+        "@openzeppelin/contracts/access/Ownable.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "CertificateNFT"
+      ]
     }
   }
 }
