@@ -18,7 +18,6 @@ type CertificateRequest = {
 type RequestInput = {
   certificateType: string;
   tokenURI: string;
-  instituteName: string;
 };
 
 type ProviderMetadata = {
@@ -34,44 +33,46 @@ const ProviderDashboard = () => {
   const [inputData, setInputData] = useState<{ [key: number]: RequestInput }>({});
   const [providerMetadata, setProviderMetadata] = useState<ProviderMetadata | null>(null);
 
-  useEffect(() => {
-    const fetchRequests = async () => {
-      if (!provider || !account) return;
-      const signer = await provider.getSigner();
-      const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+  // ✅ MOVED fetchRequests OUTSIDE useEffect
+  const fetchRequests = async () => {
+    if (!provider || !account) return;
+    const signer = await provider.getSigner();
+    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
 
-      try {
-        const requestCount = await certContract.requestCounter();
-        const allRequests: CertificateRequest[] = [];
-        for (let i = 1; i <= requestCount; i++) {
-          const req = await certContract.certificateRequests(i);
-          if (!req.approved) {
-            allRequests.push({ ...req, id: i });
-          }
+    try {
+      const requestCount = await certContract.requestCounter();
+      const allRequests: CertificateRequest[] = [];
+      for (let i = 1; i <= requestCount; i++) {
+        const req = await certContract.certificateRequests(i);
+        if (!req.approved) {
+          allRequests.push({ ...req, id: i });
         }
-        setRequests(allRequests);
-      } catch (err) {
-        console.error('Error fetching requests:', err);
       }
-    };
+      setRequests(allRequests);
+    } catch (err) {
+      console.error('Error fetching requests:', err);
+    }
+  };
 
-    const fetchProviderDetails = async () => {
-      if (!provider || !account) return;
-      const signer = await provider.getSigner();
-      const registryContract = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
+  const fetchProviderDetails = async () => {
+    if (!provider || !account) return;
+    const signer = await provider.getSigner();
+    const registryContract = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
 
-      try {
-        const [, metadataHash] = await registryContract.getUser(account);
-        if (!metadataHash) return;
-        console.log('Metadata Hash:', metadataHash);
-        const res = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
-        const metadata: ProviderMetadata = await res.json();
-        setProviderMetadata(metadata);
-      } catch (err) {
-        console.error('Error fetching provider metadata:', err);
-      }
-    };
+    try {
+      const [, metadataHash] = await registryContract.getUser(account);
+      if (!metadataHash) return;
+      console.log('Metadata Hash:', metadataHash);
+      const res = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+      if (!res.ok) throw new Error('Failed to fetch IPFS metadata');
+      const metadata: ProviderMetadata = await res.json();
+      setProviderMetadata(metadata);
+    } catch (err) {
+      console.error('Error fetching provider metadata:', err);
+    }
+  };
 
+  useEffect(() => {
     fetchRequests();
     fetchProviderDetails();
   }, [provider, account]);
@@ -88,7 +89,7 @@ const ProviderDashboard = () => {
 
   const handleApprove = async (requestId: number) => {
     const data = inputData[requestId];
-    if (!data?.certificateType || !data?.tokenURI || !data?.instituteName) {
+    if (!data?.certificateType || !data?.tokenURI || !providerMetadata?.institutionName) {
       alert('Please fill all fields');
       return;
     }
@@ -102,11 +103,12 @@ const ProviderDashboard = () => {
         requestId,
         data.certificateType,
         data.tokenURI,
-        data.instituteName
+        providerMetadata.institutionName
       );
       await tx.wait();
 
       alert('Certificate Approved!');
+      fetchRequests(); // ✅ Refresh list after approval
     } catch (err) {
       console.error('Error approving request:', err);
     }
