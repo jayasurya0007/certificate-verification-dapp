@@ -1,22 +1,29 @@
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FiUser, FiHome, FiUpload } from 'react-icons/fi';
 import { useEthereum } from '@/contexts/EthereumContext';
 import { ethers } from 'ethers';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '../../../utils/ipfs';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
-import dotenv from 'dotenv';
-dotenv.config();
 
-interface FormState {
+// Types
+interface StudentFormData {
   name: string;
   email: string;
   studentId: string;
+}
+
+interface ProviderFormData {
   institutionName: string;
   accreditationNumber: string;
   document: File | null;
 }
 
+interface FormState extends StudentFormData, ProviderFormData {
+  role: 'student' | 'provider';
+}
+
 const initialFormState: FormState = {
+  role: 'student',
   name: '',
   email: '',
   studentId: '',
@@ -32,36 +39,26 @@ const Spinner = () => (
   </svg>
 );
 
-interface SplitRegistrationFormProps {
-  onRegistrationSuccess: () => void;
-}
-
-export default function SplitRegistrationForm(){
+export default function SplitRegistrationForm() {
   const { account, provider } = useEthereum();
-  const [role, setRole] = useState<'student' | 'provider'>('student');
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset form when role changes
-  useEffect(() => {
-    setFormData(initialFormState);
-  }, [role]);
-
   const validateForm = () => {
-    if (role === 'student') {
+    if (formData.role === 'student') {
       if (!formData.name.trim()) throw new Error('Name is required');
       if (!formData.email.trim()) throw new Error('Email is required');
       if (!formData.studentId.trim()) throw new Error('Student ID is required');
-      return;
+    } else {
+      if (!formData.institutionName.trim()) throw new Error('Institution name is required');
+      if (!formData.accreditationNumber.trim()) throw new Error('Accreditation number is required');
+      if (!formData.document) throw new Error('Document upload is required');
     }
-    
-    if (!formData.institutionName.trim()) throw new Error('Institution name is required');
-    if (!formData.accreditationNumber.trim()) throw new Error('Accreditation number is required');
-    if (!formData.document) throw new Error('Document upload is required');
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       setError(null);
       setIsSubmitting(true);
@@ -72,30 +69,32 @@ export default function SplitRegistrationForm(){
 
       validateForm();
 
-      const signer = await provider.getSigner();
-      
-      // Handle document upload
+      // Prepare metadata without role (role is stored separately in contract)
+      let metadata: any;
       let documentCid = '';
-      if (role === 'provider' && formData.document) {
+
+      if (formData.role === 'student') {
+        metadata = {
+          name: formData.name,
+          email: formData.email,
+          studentId: formData.studentId
+        };
+      } else {
+        // Upload provider document first
+        if (!formData.document) throw new Error('Document is required');
         const docResponse = await uploadFileToIPFS(formData.document);
         documentCid = docResponse.cid;
+        
+        metadata = {
+          institutionName: formData.institutionName,
+          accreditationNumber: formData.accreditationNumber,
+          documentCid
+        };
       }
 
-      // Prepare metadata
-      const metadata = role === 'student' ? {
-        role,
-        name: formData.name,
-        email: formData.email,
-        studentId: formData.studentId
-      } : {
-        role,
-        institutionName: formData.institutionName,
-        accreditationNumber: formData.accreditationNumber,
-        documentCid
-      };
-
-      // Upload metadata
+      // Verify metadata upload
       const { cid } = await uploadJSONToIPFS(metadata);
+      if (!cid) throw new Error('Failed to upload metadata to IPFS');
 
       // Contract interaction
       const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
@@ -103,17 +102,18 @@ export default function SplitRegistrationForm(){
         throw new Error('Contract address not configured');
       }
 
+      const signer = await provider.getSigner();
       const contract = new ethers.Contract(
         contractAddress,
         UserRegistryABI.abi,
         signer
       );
 
-      const tx = await contract.registerUser(role, cid);
+      const tx = await contract.registerUser(formData.role, cid);
       await tx.wait();
-      // onRegistrationSuccess();
+
       alert('Registration successful!');
-      setFormData(initialFormState); // Reset form after success
+      setFormData(initialFormState);
 
     } catch (error) {
       console.error('Registration error:', error);
@@ -124,11 +124,17 @@ export default function SplitRegistrationForm(){
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    setFormData(prev => ({ ...prev, document: file || null }));
+    const file = e.target.files?.[0] || null;
+    setFormData(prev => ({ ...prev, document: file }));
   };
 
-  // Updated UI with form tag and accessibility improvements
+  const setRole = (role: 'student' | 'provider') => {
+    setFormData({
+      ...initialFormState,
+      role
+    });
+  };
+
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
       {/* Role Selection */}
@@ -139,7 +145,7 @@ export default function SplitRegistrationForm(){
             type="button"
             onClick={() => setRole('student')}
             className={`w-full p-4 rounded-lg flex items-center transition-all ${
-              role === 'student' 
+              formData.role === 'student' 
                 ? 'bg-white text-blue-600 shadow-lg'
                 : 'bg-blue-500 hover:bg-blue-400'
             }`}
@@ -152,7 +158,7 @@ export default function SplitRegistrationForm(){
             type="button"
             onClick={() => setRole('provider')}
             className={`w-full p-4 rounded-lg flex items-center transition-all ${
-              role === 'provider' 
+              formData.role === 'provider' 
                 ? 'bg-white text-blue-600 shadow-lg'
                 : 'bg-blue-500 hover:bg-blue-400'
             }`}
@@ -167,7 +173,7 @@ export default function SplitRegistrationForm(){
       <div className="w-full md:w-2/3 p-8 bg-white">
         <div className="max-w-md mx-auto">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {role === 'student' ? 'Student Registration' : 'Provider Registration'}
+            {formData.role === 'student' ? 'Student Registration' : 'Provider Registration'}
           </h2>
 
           {error && (
@@ -176,83 +182,89 @@ export default function SplitRegistrationForm(){
             </div>
           )}
 
-          <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+          <form onSubmit={handleRegister}>
             <div className="space-y-4">
-          {role === 'student' ? (
-            <>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                />
-              </div>
+              {formData.role === 'student' ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Full Name*</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.name}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Email*</label>
+                    <input
+                      type="email"
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.email}
+                      onChange={e => setFormData({...formData, email: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Student ID*</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.studentId}
+                      onChange={e => setFormData({...formData, studentId: e.target.value})}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Institution Name*</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.institutionName}
+                      onChange={e => setFormData({...formData, institutionName: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">Accreditation Number*</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={formData.accreditationNumber}
+                      onChange={e => setFormData({...formData, accreditationNumber: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Accreditation Document*
+                    </label>
+                    <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                      <input
+                        type="file"
+                        className="hidden"
+                        onChange={handleFileChange}
+                        accept=".pdf,.doc,.docx,.jpg,.png"
+                        required
+                      />
+                      <FiUpload className="mr-2 text-gray-500" />
+                      <span className="text-gray-600">
+                        {formData.document?.name || 'Click to upload document'}
+                      </span>
+                    </label>
+                  </div>
+                </>
+              )}
               
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Email</label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.email}
-                  onChange={e => setFormData({...formData, email: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Student ID</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.studentId}
-                  onChange={e => setFormData({...formData, studentId: e.target.value})}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Institution Name</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.institutionName}
-                  onChange={e => setFormData({...formData, institutionName: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Accreditation Number</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={formData.accreditationNumber}
-                  onChange={e => setFormData({...formData, accreditationNumber: e.target.value})}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Accreditation Document
-                </label>
-                <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                  <input
-                    type="file"
-                    className="hidden"
-                    onChange={handleFileChange}
-                    accept=".pdf,.doc,.docx,.jpg,.png"
-                  />
-                  <FiUpload className="mr-2 text-gray-500" />
-                  <span className="text-gray-600">
-                    {formData.document?.name || 'Click to upload document'}
-                  </span>
-                </label>
-              </div>
-            </>
-          )}
-          
-          <button
+              <button
                 type="submit"
                 disabled={isSubmitting}
                 className="w-full py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
