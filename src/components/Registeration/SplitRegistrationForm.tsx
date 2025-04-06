@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { FiUser, FiHome, FiUpload } from 'react-icons/fi';
+import { useState } from 'react';
+import { FiUser, FiHome, FiUpload, FiFileText, FiShield } from 'react-icons/fi';
 import { useEthereum } from '@/contexts/EthereumContext';
 import { ethers } from 'ethers';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '../../../utils/ipfs';
 import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
-
 import StudentDashboard from '../StudentDashboard/StudentDashboard';
 import ProviderDashboard from '../ProviderDashboard/ProviderDashboard';
 
@@ -74,7 +73,6 @@ export default function SplitRegistrationForm() {
 
       validateForm();
 
-      // Prepare metadata without role (role is stored separately in contract)
       let metadata: any;
       let documentCid = '';
 
@@ -85,7 +83,6 @@ export default function SplitRegistrationForm() {
           studentId: formData.studentId
         };
       } else {
-        // Upload provider document first
         if (!formData.document) throw new Error('Document is required');
         const docResponse = await uploadFileToIPFS(formData.document);
         documentCid = docResponse.cid;
@@ -97,11 +94,9 @@ export default function SplitRegistrationForm() {
         };
       }
 
-      // Verify metadata upload
       const { cid } = await uploadJSONToIPFS(metadata);
       if (!cid) throw new Error('Failed to upload metadata to IPFS');
 
-      // Contract interaction
       const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
       if (!contractAddress) {
         throw new Error('Contract address not configured');
@@ -140,156 +135,215 @@ export default function SplitRegistrationForm() {
     });
   };
 
-  // After successful registration, show the appropriate dashboard
   if (registrationComplete && userRole) {
     return userRole === 'student' ? <StudentDashboard /> : <ProviderDashboard />;
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
-      {/* Role Selection */}
-      <div className="w-full md:w-1/3 bg-gradient-to-b from-blue-600 to-blue-700 text-white p-8">
-        <h1 className="text-2xl font-bold mb-8">Join as...</h1>
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => setRole('student')}
-            className={`w-full p-4 rounded-lg flex items-center transition-all ${
-              formData.role === 'student' 
-                ? 'bg-white text-blue-600 shadow-lg'
-                : 'bg-blue-500 hover:bg-blue-400'
-            }`}
-          >
-            <FiUser className="text-xl mr-3" />
-            <span className="text-lg font-semibold">Student</span>
-          </button>
-          
-          <button
-            type="button"
-            onClick={() => setRole('provider')}
-            className={`w-full p-4 rounded-lg flex items-center transition-all ${
-              formData.role === 'provider' 
-                ? 'bg-white text-blue-600 shadow-lg'
-                : 'bg-blue-500 hover:bg-blue-400'
-            }`}
-          >
-            <FiHome className="text-xl mr-3" />
-            <span className="text-lg font-semibold">Provider</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Registration Form */}
-      <div className="w-full md:w-2/3 p-8 bg-white">
-        <div className="max-w-md mx-auto">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            {formData.role === 'student' ? 'Student Registration' : 'Provider Registration'}
-          </h2>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleRegister}>
-            <div className="space-y-4">
-              {formData.role === 'student' ? (
-                <>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Full Name*</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.name}
-                      onChange={e => setFormData({...formData, name: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Email*</label>
-                    <input
-                      type="email"
-                      required
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.email}
-                      onChange={e => setFormData({...formData, email: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Student ID*</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.studentId}
-                      onChange={e => setFormData({...formData, studentId: e.target.value})}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Institution Name*</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.institutionName}
-                      onChange={e => setFormData({...formData, institutionName: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Accreditation Number*</label>
-                    <input
-                      type="text"
-                      required
-                      className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      value={formData.accreditationNumber}
-                      onChange={e => setFormData({...formData, accreditationNumber: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Accreditation Document*
-                    </label>
-                    <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
-                      <input
-                        type="file"
-                        className="hidden"
-                        onChange={handleFileChange}
-                        accept=".pdf,.doc,.docx,.jpg,.png"
-                        required
-                      />
-                      <FiUpload className="mr-2 text-gray-500" />
-                      <span className="text-gray-600">
-                        {formData.document?.name || 'Click to upload document'}
-                      </span>
-                    </label>
-                  </div>
-                </>
-              )}
+    <div className="min-h-screen bg-gradient-to-b from-[#8A2BE2]/5 via-white to-white">
+      {/* Grid pattern background - moved to bottom layer */}
+      <div className="absolute inset-0 opacity-5 [background-image:linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] [background-size:24px_24px] -z-10" />
+      
+      <div className="container mx-auto px-4 md:px-6 py-12 relative z-10">
+        <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="flex flex-col md:flex-row">
+            {/* Role Selection */}
+            <div className="w-full md:w-1/3 bg-[#191A23] p-8 text-white">
+              <div className="flex items-center space-x-2 mb-8">
+                <FiShield className="text-2xl text-[#B9FF66]" />
+                <span className="text-xl font-bold">ANTI-FAKE</span>
+              </div>
               
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center justify-center">
-                    <Spinner />
-                    Processing...
+              <h1 className="text-2xl font-bold mb-6">Join as ..</h1>
+              
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => setRole('student')}
+                  className={`w-full p-5 rounded-xl flex items-start transition-all ${
+                    formData.role === 'student' 
+                      ? 'bg-[#B9FF66] text-[#191A23] shadow-lg'
+                      : 'bg-[#191A23] hover:bg-[#191A23]/90 border border-[#B9FF66]/30'
+                  }`}
+                >
+                  <div className="bg-[#191A23] p-2 rounded-lg mr-4">
+                    <FiUser className={`text-xl ${formData.role === 'student' ? 'text-[#B9FF66]' : 'text-white'}`} />
                   </div>
-                ) : (
-                  'Complete Registration'
-                )}
-              </button>
+                  <div className="text-left">
+                    <span className="block font-semibold">Student</span>
+                    <span className="block text-sm opacity-80">Register your credentials</span>
+                  </div>
+                </button>
+                
+                <button
+                  type="button"
+                  onClick={() => setRole('provider')}
+                  className={`w-full p-5 rounded-xl flex items-start transition-all ${
+                    formData.role === 'provider' 
+                      ? 'bg-[#B9FF66] text-[#191A23] shadow-lg'
+                      : 'bg-[#191A23] hover:bg-[#191A23]/90 border border-[#B9FF66]/30'
+                  }`}
+                >
+                  <div className="bg-[#191A23] p-2 rounded-lg mr-4">
+                    <FiHome className={`text-xl ${formData.role === 'provider' ? 'text-[#B9FF66]' : 'text-white'}`} />
+                  </div>
+                  <div className="text-left">
+                    <span className="block font-semibold">Institution</span>
+                    <span className="block text-sm opacity-80">Issue verifiable certificates</span>
+                  </div>
+                </button>
+              </div>
+              
+              <div className="mt-12 pt-6 border-t border-[#B9FF66]/20">
+                <p className="text-sm opacity-80">
+                  Powered by blockchain technology for secure, tamper-proof credentials.
+                </p>
+              </div>
             </div>
-          </form>
+
+            {/* Registration Form */}
+            <div className="w-full md:w-2/3 p-8 bg-white relative z-10">
+              <div className="mb-8">
+                <h2 className="text-3xl font-bold text-[#191A23] mb-2">
+                  {formData.role === 'student' ? 'Student Registration' : 'Institution Registration'}
+                </h2>
+                <p className="text-[#191A23]/80">
+                  {formData.role === 'student' 
+                    ? 'Register to receive blockchain-verified credentials'
+                    : 'Register your institution to issue credentials'}
+                </p>
+              </div>
+
+              {error && (
+                <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 flex items-start">
+                  <FiShield className="flex-shrink-0 mr-3 text-red-500 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Registration Error</p>
+                    <p className="text-sm">{error}</p>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleRegister} className="space-y-6">
+                {formData.role === 'student' ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-[#191A23] mb-2">Full Name*</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                        value={formData.name}
+                        onChange={e => setFormData({...formData, name: e.target.value})}
+                        placeholder="Your full name as it appears on ID"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[#191A23] mb-2">Email*</label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                        value={formData.email}
+                        onChange={e => setFormData({...formData, email: e.target.value})}
+                        placeholder="example@university.edu"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[#191A23] mb-2">Student ID*</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                        value={formData.studentId}
+                        onChange={e => setFormData({...formData, studentId: e.target.value})}
+                        placeholder="University-issued student ID"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-[#191A23] mb-2">Institution Name*</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                        value={formData.institutionName}
+                        onChange={e => setFormData({...formData, institutionName: e.target.value})}
+                        placeholder="Official institution name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[#191A23] mb-2">Accreditation Number*</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                        value={formData.accreditationNumber}
+                        onChange={e => setFormData({...formData, accreditationNumber: e.target.value})}
+                        placeholder="Government-issued accreditation ID"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-[#191A23] mb-2">
+                        Accreditation Document*
+                      </label>
+                      <label className="flex flex-col items-center justify-center w-full p-8 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-[#8A2BE2] transition-colors bg-gray-50">
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={handleFileChange}
+                          accept=".pdf,.doc,.docx,.jpg,.png"
+                          required
+                        />
+                        {formData.document ? (
+                          <div className="flex flex-col items-center text-center">
+                            <FiFileText className="text-3xl text-[#8A2BE2] mb-2" />
+                            <span className="font-medium text-[#191A23]">
+                              {formData.document.name}
+                            </span>
+                            <span className="text-sm text-gray-500 mt-1">Click to change file</span>
+                          </div>
+                        ) : (
+                          <>
+                            <FiUpload className="text-3xl text-[#8A2BE2] mb-3" />
+                            <span className="text-sm text-[#191A23]/80 text-center">
+                              Drag and drop your accreditation document here<br />
+                              or click to browse files
+                            </span>
+                            <span className="text-xs text-gray-500 mt-2">Supports: PDF, DOC, JPG, PNG (max 5MB)</span>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  </>
+                )}
+                
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-4 px-6 bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-lg"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Spinner />
+                      Securing your registration...
+                    </>
+                  ) : (
+                    <>
+                      <FiShield className="mr-2" />
+                      {formData.role === 'student' ? 'Register as Student' : 'Register Institution'}
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
