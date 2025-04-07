@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button"
-
 export default function ContactSection() {
   return (
     <section className="py-16 md:py-24 bg-[#F3F3F3]">
@@ -11,9 +9,9 @@ export default function ContactSection() {
               <p className="text-[#191A23]/80 mb-6">
                 Reach out to learn more about our decentralized certificate verification system.
               </p>
-              <Button className="bg-[#191A23] text-white hover:bg-[#B9FF66] hover:text-[#191A23] transition-colors">
+              <button className="bg-[#191A23] text-white hover:bg-[#B9FF66] hover:text-[#191A23] transition-colors px-6 py-3 rounded-md font-medium">
                 Contact Support
-              </Button>
+              </button>
             </div>
             <div className="flex-1 flex justify-center">
               <div className="relative w-48 h-48">
@@ -27,5 +25,5 @@ export default function ContactSection() {
         </div>
       </div>
     </section>
-  )
+  )
 }
