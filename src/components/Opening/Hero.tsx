@@ -1,5 +1,4 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+
 import Image from "next/image"; 
 import ConnectButton from '../ConnectButton2';// Correct import for Next.js Image component
 
