@@ -24,6 +24,7 @@ contract CertificateNFT is ERC721URIStorage, Ownable {
     struct CertificateRequest {
         address student;
         string name;
+        address institute;
         string message;
         string studentMetadataHash; // Added to store student IPFS hash
         bool approved;
@@ -132,6 +133,7 @@ contract CertificateNFT is ERC721URIStorage, Ownable {
         certificateRequests[requestCounter] = CertificateRequest({
             student: msg.sender,
             name: name,
+            institute: institute,
             message: message,
             studentMetadataHash: studentMetadataHash,
             approved: false
