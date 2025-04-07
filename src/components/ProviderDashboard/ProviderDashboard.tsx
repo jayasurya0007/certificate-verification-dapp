@@ -12,6 +12,7 @@ interface CertificateRequest {
   message: string;
   studentMetadataHash: string;
   approved: boolean;
+  institute: string;
 }
 
 interface StudentMetadata {
@@ -84,10 +85,11 @@ const ProviderDashboard = () => {
 
       for (let i = 1; i <= requestCount; i++) {
         const req = await certContract.certificateRequests(i);
-        if (!req.approved) {
+        if (!req.approved && req.institute.toLowerCase() === account.toLowerCase()) {
           const request: CertificateRequest = {
             id: i,
             student: req.student,
+            institute: req.institute,
             name: req.name,
             message: req.message,
             studentMetadataHash: req.studentMetadataHash,
