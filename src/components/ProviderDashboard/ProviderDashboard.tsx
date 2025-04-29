@@ -1,33 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ethers } from 'ethers';
 import { useEthereum } from '@/contexts/EthereumContext';
-import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
-import CertificateNFTABI from '../../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
+import { useContractContext,CertificateRequest,StudentMetadata,ProviderMetadata } from '@/contexts/ContractContext';
 import { uploadJSONToIPFS, uploadFileToIPFS } from '../../../utils/ipfs';
 import { FiUser, FiHome, FiFileText, FiCheckCircle, FiXCircle, FiUpload, FiShield, FiAward } from 'react-icons/fi';
 
-interface CertificateRequest {
-  id: number;
-  student: string;
-  name: string;
-  message: string;
-  studentMetadataHash: string;
-  approved: boolean;
-  institute: string;
-}
-
-interface StudentMetadata {
-  name: string;
-  email: string;
-  studentId: string;
-  [key: string]: any;
-}
-
-interface ProviderMetadata {
-  institutionName: string;
-  accreditationNumber: string;
-  documentCid: string;
-}
 
 interface CertificateInput {
   certificateType: string;
@@ -37,116 +13,55 @@ interface CertificateInput {
 }
 
 const ProviderDashboard = () => {
-  const { account, provider } = useEthereum();
+  const { account } = useEthereum();
+  const {
+    fetchProviderCertificateRequests,
+    fetchStudentMetadata,
+    fetchProviderMetadata,
+    approveCertificateRequest,
+    cancelCertificateRequest,
+    checkInstituteAuthorization
+  } = useContractContext();
+
   const [requests, setRequests] = useState<CertificateRequest[]>([]);
-  const [studentMetadata, setStudentMetadata] = useState<{[key: string]: StudentMetadata}>({});
+  const [studentMetadata, setStudentMetadata] = useState<{ [key: string]: StudentMetadata }>({});
   const [providerMetadata, setProviderMetadata] = useState<ProviderMetadata | null>(null);
-  const [certificateInputs, setCertificateInputs] = useState<{[key: number]: CertificateInput}>({});
+  const [certificateInputs, setCertificateInputs] = useState<{ [key: number]: CertificateInput }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
-  const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
 
   useEffect(() => {
-    const checkAuthorization = async () => {
-      if (!provider || !account) return;
-      
+    const fetchAll = async () => {
+      if (!account) return;
+      setIsLoading(true);
       try {
-        const signer = await provider.getSigner();
-        const certContract = new ethers.Contract(
-          certificateNFTAddress, 
-          CertificateNFTABI.abi, 
-          signer
-        );
-        
-        const authorized = await certContract.authorizedInstitutes(account);
+        const [requests, providerMeta, authorized] = await Promise.all([
+          fetchProviderCertificateRequests(),
+          fetchProviderMetadata(account),
+          checkInstituteAuthorization(account)
+        ]);
+        setRequests(requests);
+        setProviderMetadata(providerMeta);
         setIsAuthorized(authorized);
+
+        const metadataMap: { [key: string]: StudentMetadata } = {};
+        await Promise.all(
+          requests.map(async (req) => {
+            if (req.studentMetadataHash) {
+              const meta = await fetchStudentMetadata(req.student, req.studentMetadataHash);
+              if (meta) metadataMap[req.student] = meta;
+            }
+          })
+        );
+        setStudentMetadata(metadataMap);
       } catch (err) {
-        console.error('Error checking authorization:', err);
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
-  
-    checkAuthorization();
-  }, [provider, account]);
-
-  const fetchRequests = async () => {
-    if (!provider || !account) return;
-    
-    try {
-      setIsLoading(true);
-      const signer = await provider.getSigner();
-      const certContract = new ethers.Contract(
-        certificateNFTAddress, 
-        CertificateNFTABI.abi, 
-        signer
-      );
-
-      const requestCount = await certContract.requestCounter();
-      const pendingRequests: CertificateRequest[] = [];
-      const metadataMap: {[key: string]: StudentMetadata} = {};
-
-      for (let i = 1; i <= requestCount; i++) {
-        const req = await certContract.certificateRequests(i);
-        if (!req.approved && req.institute.toLowerCase() === account.toLowerCase()) {
-          const request: CertificateRequest = {
-            id: i,
-            student: req.student,
-            institute: req.institute,
-            name: req.name,
-            message: req.message,
-            studentMetadataHash: req.studentMetadataHash,
-            approved: req.approved
-          };
-          pendingRequests.push(request);
-
-          // Fetch student metadata if hash exists
-          if (req.studentMetadataHash) {
-            try {
-              const response = await fetch(`https://ipfs.io/ipfs/${req.studentMetadataHash}`);
-              const metadata = await response.json();
-              metadataMap[req.student] = metadata;
-            } catch (err) {
-              console.error(`Failed to fetch metadata for student ${req.student}:`, err);
-            }
-          }
-        }
-      }
-
-      setRequests(pendingRequests);
-      setStudentMetadata(metadataMap);
-    } catch (err) {
-      console.error('Error fetching requests:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchProviderDetails = async () => {
-    if (!provider || !account) return;
-    
-    try {
-      const signer = await provider.getSigner();
-      const registryContract = new ethers.Contract(
-        userRegistryAddress, 
-        UserRegistryABI.abi, 
-        signer
-      );
-
-      const [, metadataHash] = await registryContract.getUser(account);
-      if (metadataHash) {
-        const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
-        const metadata: ProviderMetadata = await response.json();
-        setProviderMetadata(metadata);
-      }
-    } catch (err) {
-      console.error('Error fetching provider details:', err);
-    }
-  };
-
-  useEffect(() => {
-    fetchRequests();
-    fetchProviderDetails();
-  }, [provider, account]);
+    fetchAll();
+  }, [account]);
 
   const handleInputChange = (
     requestId: number,
@@ -163,25 +78,19 @@ const ProviderDashboard = () => {
   };
 
   const handleApprove = async (requestId: number) => {
-    if (!provider || !account || !providerMetadata) return;
-    
+    if (!account || !providerMetadata) return;
     if (!isAuthorized) {
       alert('Your account is not authorized to approve certificates.');
       return;
     }
-  
     const input = certificateInputs[requestId];
     if (!input?.certificateType || !input?.name || !input?.description || !input?.imageFile) {
       alert('Please fill in all certificate details');
       return;
     }
-  
     try {
-      // Upload image to IPFS
       const { cid: imageCid } = await uploadFileToIPFS(input.imageFile);
       const imageURI = `ipfs://${imageCid}`;
-
-      // Prepare metadata
       const metadata = {
         name: input.name,
         description: input.description,
@@ -193,28 +102,17 @@ const ProviderDashboard = () => {
           documentCid: providerMetadata.documentCid
         }
       };
-
-      // Upload metadata to IPFS
       const { cid: metadataCid } = await uploadJSONToIPFS(metadata);
       const tokenURI = `ipfs://${metadataCid}`;
-
-      const signer = await provider.getSigner();
-      const certContract = new ethers.Contract(
-        certificateNFTAddress, 
-        CertificateNFTABI.abi, 
-        signer
-      );
-
-      const tx = await certContract.approveCertificateRequest(
+      await approveCertificateRequest(
         requestId,
         input.certificateType,
         tokenURI,
         providerMetadata.institutionName
       );
-      await tx.wait();
-      
       alert('Certificate approved successfully!');
-      fetchRequests();
+      const updatedRequests = await fetchProviderCertificateRequests();
+      setRequests(updatedRequests);
     } catch (err) {
       console.error('Error approving request:', err);
       alert('Failed to approve certificate request');
@@ -222,20 +120,12 @@ const ProviderDashboard = () => {
   };
 
   const handleCancel = async (requestId: number) => {
-    if (!provider || !account) return;
-
+    if (!account) return;
     try {
-      const signer = await provider.getSigner();
-      const certContract = new ethers.Contract(
-        certificateNFTAddress, 
-        CertificateNFTABI.abi, 
-        signer
-      );
-
-      const tx = await certContract.cancelCertificateRequest(requestId);
-      await tx.wait();
+      await cancelCertificateRequest(requestId);
       alert('Request cancelled successfully!');
-      fetchRequests();
+      const updatedRequests = await fetchProviderCertificateRequests();
+      setRequests(updatedRequests);
     } catch (err) {
       console.error('Error cancelling request:', err);
       alert('Failed to cancel request');
@@ -259,7 +149,6 @@ const ProviderDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#8A2BE2]/5 via-white to-white p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-[#191A23]">
             Provider Dashboard
@@ -268,10 +157,8 @@ const ProviderDashboard = () => {
             {account ? `${account.substring(0, 6)}...${account.substring(38)}` : 'Not Connected'}
           </div>
         </div>
-
         {account ? (
           <>
-            {/* Institution Info Card */}
             {providerMetadata && (
               <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
                 <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -303,21 +190,17 @@ const ProviderDashboard = () => {
                 </div>
               </div>
             )}
-
-            {/* Requests Section */}
             <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
               <h2 className="text-xl font-semibold mb-6 flex items-center">
                 <FiAward className="mr-2 text-[#8A2BE2]" />
                 Pending Certificate Requests
               </h2>
-              
               {requests.length > 0 ? (
                 <div className="space-y-6">
                   {requests.map(request => {
                     const studentInfo = studentMetadata[request.student] || {};
                     return (
                       <div key={request.id} className="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
-                        {/* Student Info */}
                         <div className="mb-6">
                           <h3 className="font-bold text-lg mb-4 flex items-center">
                             <FiUser className="mr-2 text-[#8A2BE2]" />
@@ -346,8 +229,6 @@ const ProviderDashboard = () => {
                             </div>
                           </div>
                         </div>
-
-                        {/* Request Details */}
                         <div className="mb-6">
                           <h3 className="font-bold text-lg mb-4 flex items-center">
                             <FiFileText className="mr-2 text-[#8A2BE2]" />
@@ -364,8 +245,6 @@ const ProviderDashboard = () => {
                             </p>
                           </div>
                         </div>
-
-                        {/* Certificate Form */}
                         <div className="space-y-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -378,7 +257,6 @@ const ProviderDashboard = () => {
                               onChange={(e) => handleInputChange(request.id, 'certificateType', e.target.value)}
                             />
                           </div>
-                          
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Certificate Name
@@ -390,7 +268,6 @@ const ProviderDashboard = () => {
                               onChange={(e) => handleInputChange(request.id, 'name', e.target.value)}
                             />
                           </div>
-
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Description
@@ -402,7 +279,6 @@ const ProviderDashboard = () => {
                               onChange={(e) => handleInputChange(request.id, 'description', e.target.value)}
                             />
                           </div>
-
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Certificate Image
@@ -439,20 +315,18 @@ const ProviderDashboard = () => {
                               )}
                             </label>
                           </div>
-                          
                           <div className="flex gap-3 pt-2">
                             <button
                               onClick={() => handleApprove(request.id)}
-                              disabled={!certificateInputs[request.id]?.certificateType || 
-                                       !certificateInputs[request.id]?.name ||
-                                       !certificateInputs[request.id]?.description ||
-                                       !certificateInputs[request.id]?.imageFile}
+                              disabled={!certificateInputs[request.id]?.certificateType ||
+                                !certificateInputs[request.id]?.name ||
+                                !certificateInputs[request.id]?.description ||
+                                !certificateInputs[request.id]?.imageFile}
                               className="flex-1 bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white py-3 px-6 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
                               <FiCheckCircle className="mr-2" />
                               Approve & Issue
                             </button>
-                            
                             <button
                               onClick={() => handleCancel(request.id)}
                               className="flex-1 bg-gray-200 text-gray-800 py-3 px-6 rounded-lg font-medium hover:bg-gray-300 transition-colors flex items-center justify-center"

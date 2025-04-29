@@ -22,6 +22,29 @@ export interface RegisteredUser {
   metadataHash: string;
 }
 
+export interface CertificateRequest {
+  id: number;
+  student: string;
+  name: string;
+  message: string;
+  studentMetadataHash: string;
+  approved: boolean;
+  institute: string;
+}
+
+export interface StudentMetadata {
+  name: string;
+  email: string;
+  studentId: string;
+  [key: string]: any;
+}
+
+export interface ProviderMetadata {
+  institutionName: string;
+  accreditationNumber: string;
+  documentCid: string;
+}
+
 interface UserData {
   role: string;
   registered: boolean;
@@ -41,6 +64,19 @@ interface ContractContextType {
   checkIsOwner: (address: string) => Promise<boolean>;
   authorizeInstitute: (address: string) => Promise<void>;
   certificateNFTAddress: string;
+
+  // Provider Dashboard Functions
+  fetchProviderCertificateRequests: () => Promise<CertificateRequest[]>;
+  fetchStudentMetadata: (studentAddress: string, metadataHash: string) => Promise<StudentMetadata | null>;
+  fetchProviderMetadata: (address: string) => Promise<ProviderMetadata | null>;
+  approveCertificateRequest: (
+    requestId: number,
+    certificateType: string,
+    tokenURI: string,
+    institutionName: string
+  ) => Promise<void>;
+  cancelCertificateRequest: (requestId: number) => Promise<void>;
+  checkInstituteAuthorization: (address: string) => Promise<boolean>;
 }
 
 interface ContractContextProviderProps {
@@ -185,6 +221,105 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
     await tx.wait();
   };
 
+  // Provider Dashboard Functions
+  const fetchProviderCertificateRequests = async (): Promise<CertificateRequest[]> => {
+    if (!provider || !account) return [];
+    const signer = await provider.getSigner();
+    const certContract = new ethers.Contract(
+      certificateNFTAddress,
+      CertificateNFTABI.abi,
+      signer
+    );
+    const requestCount: number = Number(await certContract.requestCounter());
+    const requests: CertificateRequest[] = [];
+    for (let i = 1; i <= requestCount; i++) {
+      const req = await certContract.certificateRequests(i);
+      if (!req.approved && req.institute.toLowerCase() === account.toLowerCase()) {
+        requests.push({
+          id: i,
+          student: req.student,
+          institute: req.institute,
+          name: req.name,
+          message: req.message,
+          studentMetadataHash: req.studentMetadataHash,
+          approved: req.approved
+        });
+      }
+    }
+    return requests;
+  };
+
+  const fetchStudentMetadata = async (studentAddress: string, metadataHash: string): Promise<StudentMetadata | null> => {
+    if (!metadataHash) return null;
+    try {
+      const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+      return await response.json();
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchProviderMetadata = async (address: string): Promise<ProviderMetadata | null> => {
+    if (!provider) return null;
+    const signer = await provider.getSigner();
+    const registryContract = new ethers.Contract(
+      userRegistryAddress!,
+      UserRegistryABI.abi,
+      signer
+    );
+    const [, metadataHash] = await registryContract.getUser(address);
+    if (metadataHash) {
+      const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+      return await response.json();
+    }
+    return null;
+  };
+
+  const approveCertificateRequest = async (
+    requestId: number,
+    certificateType: string,
+    tokenURI: string,
+    institutionName: string
+  ): Promise<void> => {
+    if (!provider || !account) throw new Error('Wallet not connected');
+    const signer = await provider.getSigner();
+    const certContract = new ethers.Contract(
+      certificateNFTAddress,
+      CertificateNFTABI.abi,
+      signer
+    );
+    const tx = await certContract.approveCertificateRequest(
+      requestId,
+      certificateType,
+      tokenURI,
+      institutionName
+    );
+    await tx.wait();
+  };
+
+  const cancelCertificateRequest = async (requestId: number): Promise<void> => {
+    if (!provider || !account) throw new Error('Wallet not connected');
+    const signer = await provider.getSigner();
+    const certContract = new ethers.Contract(
+      certificateNFTAddress,
+      CertificateNFTABI.abi,
+      signer
+    );
+    const tx = await certContract.cancelCertificateRequest(requestId);
+    await tx.wait();
+  };
+
+  const checkInstituteAuthorization = async (address: string): Promise<boolean> => {
+    if (!provider) return false;
+    const signer = await provider.getSigner();
+    const certContract = new ethers.Contract(
+      certificateNFTAddress,
+      CertificateNFTABI.abi,
+      signer
+    );
+    return await certContract.authorizedInstitutes(address);
+  };
+
   return (
     <ContractContext.Provider
       value={{
@@ -198,6 +333,12 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         checkIsOwner,
         authorizeInstitute,
         certificateNFTAddress,
+        fetchProviderCertificateRequests,
+        fetchStudentMetadata,
+        fetchProviderMetadata,
+        approveCertificateRequest,
+        cancelCertificateRequest,
+        checkInstituteAuthorization,
       }}
     >
       {children}
