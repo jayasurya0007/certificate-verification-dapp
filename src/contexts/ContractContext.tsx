@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ethers } from 'ethers';
 import UserRegistryABI from '../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
+import CertificateNFTABI from '../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
 import { useEthereum } from '@/contexts/EthereumContext';
 
 interface UserData {
@@ -8,11 +9,24 @@ interface UserData {
   registered: boolean;
 }
 
+export interface Certificate {
+  id: string;
+  name: string;
+  institute: string;
+  issueDate: number;
+  certificateType: string;
+  student: string;
+  tokenURI: string;
+  metadata?: any;
+}
+
 interface ContractContextType {
   getContract: (provider: any) => any;
   userData: UserData | null;
   loading: boolean;
   refetchUserData: () => void;
+  getCertificatesByAddress: (address: string) => Promise<Certificate[]>;
+  checkIsOwner: (address: string) => Promise<boolean>;
 }
 
 interface ContractContextProviderProps {
@@ -23,7 +37,8 @@ const ContractContext = createContext<ContractContextType | null>(null);
 
 export const ContractContextProvider = ({ children }: ContractContextProviderProps) => {
   const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-  const { account, provider } = useEthereum(); // Get account and provider from EthereumContext
+  const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
+  const { account, provider } = useEthereum();
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
@@ -54,7 +69,6 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
     }
   };
 
-  // Fetch user data when account or provider changes
   useEffect(() => {
     fetchUserData();
   }, [account, provider]);
@@ -63,11 +77,83 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
     fetchUserData();
   };
 
+  // --- NEW: Certificate Search Logic ---
+  const getCertificatesByAddress = async (searchAddress: string): Promise<Certificate[]> => {
+    if (!provider || !certificateNFTAddress) {
+      throw new Error('Provider or contract address not available');
+    }
+
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+
+    const certificateIds: bigint[] = await contract.getStudentCertificates(searchAddress);
+
+    if (certificateIds.length === 0) {
+      return [];
+    }
+
+    const certificatesData: Certificate[] = await Promise.all(
+      certificateIds.map(async (id: bigint) => {
+        const [name, institute, issueDate, certificateType, student] = await contract.getCertificateDetails(id);
+        const tokenURI = await contract.tokenURI(id);
+
+        let metadata = null;
+        try {
+          const metadataHash = tokenURI.replace('ipfs://', '');
+          const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+          metadata = await response.json();
+        } catch (err) {
+          console.error('Metadata fetch error:', err);
+        }
+
+        return {
+          id: id.toString(),
+          name,
+          institute,
+          issueDate: Number(issueDate),
+          certificateType,
+          student,
+          tokenURI,
+          metadata,
+        };
+      })
+    );
+
+    return certificatesData;
+  };
+
+  // --- NEW: Owner Check Logic ---
+  const checkIsOwner = async (address: string): Promise<boolean> => {
+    if (!provider || !certificateNFTAddress || !address) return false;
+    try {
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+      const owner = await contract.owner();
+      return owner.toLowerCase() === address.toLowerCase();
+    } catch (error) {
+      console.error('Error checking ownership:', error);
+      return false;
+    }
+  };
+
   return (
-    <ContractContext.Provider value={{ getContract, userData, loading, refetchUserData }}>
+    <ContractContext.Provider
+      value={{
+        getContract,
+        userData,
+        loading,
+        refetchUserData,
+        getCertificatesByAddress,
+        checkIsOwner,
+      }}
+    >
       {children}
     </ContractContext.Provider>
   );
 };
 
-export const useContractContext = () => useContext(ContractContext);
+export const useContractContext = () => {
+  const ctx = useContext(ContractContext);
+  if (!ctx) throw new Error('useContractContext must be used within ContractContextProvider');
+  return ctx;
+};
