@@ -1,310 +1,159 @@
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
 import { useEthereum } from '@/contexts/EthereumContext';
-import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
-import CertificateNFTABI from '../../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
+import { useContractContext } from '@/contexts/ContractContext';
 import CertificateSearch from '../CertificateSearch/CertificateSearch';
-import { FiUser, FiMail, FiBook, FiAward, FiFileText, FiSend } from 'react-icons/fi';
-
-interface Certificate {
-  id: string;
-  name: string;
-  institute: string;
-  issueDate: number;
-  certificateType: string;
-  student: string;
-  tokenURI: string;
-  image?: string;
-}
+import { FiUser, FiMail, FiBook } from 'react-icons/fi';
 
 const StudentDashboard = () => {
-  const { account, provider } = useEthereum();
+  const { account } = useEthereum();
+  const {
+    fetchStudentProfile,
+    getCertificatesByAddress,
+    requestCertificateIssuance,
+  } = useContractContext();
+
   const [profile, setProfile] = useState<any>({});
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [providerAddress, setProviderAddress] = useState('');
   const [certificateName, setCertificateName] = useState('');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-
-  const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
-  const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
+  const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!account || !provider) return;
-
+      if (!account) return;
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const signer = await provider.getSigner();
-        const userRegistry = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
-        const certificateNFT = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
-
-        // Fetch student profile
-        const [, ipfsHash] = await userRegistry.getUser(account);
-        if (ipfsHash) {
-          const response = await fetch(`https://ipfs.io/ipfs/${ipfsHash}`);
-          const data = await response.json();
-          setProfile(data);
-        }
-
-        // Fetch certificates
-        const certificateIds = await certificateNFT.getStudentCertificates(account);
-        const certDetails = await Promise.all(
-          certificateIds.map(async (id: any) => {
-            const [name, institute, issueDate, certificateType, student] =
-              await certificateNFT.getCertificateDetails(id);
-            const tokenURI = await certificateNFT.tokenURI(id);
-
-            let image;
-            try {
-              const metadataCID = tokenURI.replace('ipfs://', '');
-              const metadataRes = await fetch(`https://ipfs.io/ipfs/${metadataCID}`);
-              const metadata = await metadataRes.json();
-              image = metadata.image?.replace('ipfs://', 'https://ipfs.io/ipfs/');
-            } catch (e) {
-              console.warn('Failed to load image metadata for token:', id);
-            }
-
-            return {
-              id: id.toString(),
-              name,
-              institute,
-              issueDate,
-              certificateType,
-              student,
-              tokenURI,
-              image,
-            };
-          })
-        );
-        setCertificates(certDetails);
-      } catch (err) {
-        console.error('Error fetching data:', err);
+        const profileData = await fetchStudentProfile(account);
+        if (profileData) setProfile(profileData);
+        const certs = await getCertificatesByAddress(account);
+        setCertificates(certs);
+      } catch (error) {
+        console.error('Error loading student dashboard data:', error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchData();
-  }, [account, provider]);
+  }, [account, fetchStudentProfile, getCertificatesByAddress]);
 
   const handleRequestCertificate = async () => {
-    if (!account || !provider) return;
-
+    if (!providerAddress || !certificateName) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    setRequesting(true);
     try {
-      const signer = await provider.getSigner();
-      const userRegistry = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
-      const certificateNFT = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
-
-      const [, metadataHash] = await userRegistry.getUser(account);
-
-      const tx = await certificateNFT.requestCertificate(
-        providerAddress,
-        certificateName,
-        message,
-        metadataHash
-      );
-      await tx.wait();
-      alert('Certificate request sent successfully!');
-
+      await requestCertificateIssuance(providerAddress, certificateName, message);
+      alert('Certificate request submitted successfully!');
       setProviderAddress('');
       setCertificateName('');
       setMessage('');
     } catch (error) {
-      console.error('Certificate request error:', error);
-      alert('Failed to send certificate request');
+      console.error('Error requesting certificate:', error);
+      alert('Failed to submit certificate request.');
+    } finally {
+      setRequesting(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#8A2BE2]/5 via-white to-white p-8">
-        <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6 text-center">
-          <div className="animate-pulse flex flex-col items-center justify-center h-64">
-            <div className="w-12 h-12 bg-gray-200 rounded-full mb-4"></div>
-            <div className="w-64 h-4 bg-gray-200 rounded mb-2"></div>
-            <div className="w-48 h-4 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#8A2BE2]/5 via-white to-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-[#191A23]">
-            Student Dashboard
-          </h1>
-          <div className="bg-[#191A23] text-white px-4 py-2 rounded-full text-sm">
-            {account ? `${account.substring(0, 6)}...${account.substring(38)}` : 'Not Connected'}
-          </div>
+    <div className="max-w-3xl mx-auto my-8 p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold text-center text-blue-700 mb-8">Student Dashboard</h2>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center h-32">
+          <span className="text-gray-500">Loading...</span>
         </div>
-
-        {account ? (
-          <>
-            {/* Profile Section */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <FiUser className="mr-2 text-[#8A2BE2]" />
-                Your Profile
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <p className="flex items-center text-gray-700">
-                    <span className="font-medium w-24">Name:</span>
-                    <span>{profile.name || 'Not available'}</span>
-                  </p>
-                  <p className="flex items-center text-gray-700">
-                    <span className="font-medium w-24">Email:</span>
-                    <span>{profile.email || 'Not available'}</span>
-                  </p>
-                  <p className="flex items-center text-gray-700">
-                    <span className="font-medium w-24">Student ID:</span>
-                    <span>{profile.studentId || 'Not available'}</span>
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium mb-1">Wallet Address:</p>
-                  <p className="text-sm text-gray-600 break-all bg-gray-50 p-2 rounded">
-                    {account}
-                  </p>
-                </div>
+      ) : (
+        <>
+          {/* Profile Section */}
+          <section className="mb-8 pb-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Profile</h3>
+            <div className="space-y-2 pl-2">
+              <div className="flex items-center gap-2 text-gray-700">
+                <FiUser className="text-blue-500" /> <span>Name:</span> <span className="font-medium">{profile.name || 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <FiMail className="text-blue-500" /> <span>Email:</span> <span className="font-medium">{profile.email || 'N/A'}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <FiBook className="text-blue-500" /> <span>Student ID:</span> <span className="font-medium">{profile.studentId || 'N/A'}</span>
               </div>
             </div>
+          </section>
 
-            {/* Certificate List */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-100">
-              <h2 className="text-xl font-semibold mb-6 flex items-center">
-                <FiAward className="mr-2 text-[#8A2BE2]" />
-                Your Certificates
-              </h2>
-              
-              {certificates.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {certificates.map((cert) => (
-                    <div key={cert.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-lg">{cert.name}</h3>
-                        <span className="bg-[#B9FF66] text-[#191A23] text-xs px-2 py-1 rounded-full">
-                          {cert.certificateType}
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2 text-sm">
-                        <p className="flex items-center">
-                          <FiBook className="mr-2 text-gray-500" />
-                          <span className="font-medium">Issued by:</span> {cert.institute}
-                        </p>
-                        <p className="flex items-center">
-                          <FiFileText className="mr-2 text-gray-500" />
-                          <span className="font-medium">Issued on:</span> {new Date(Number(cert.issueDate) * 1000).toLocaleDateString()}
-                        </p>
-                      </div>
-
-                      {cert.image && (
-                        <img
-                          src={cert.image}
-                          alt="Certificate"
-                          className="mt-4 rounded-lg w-full h-auto border border-gray-200"
-                        />
-                      )}
-
-                      <a
-                        href={`https://ipfs.io/ipfs/${cert.tokenURI.split('ipfs://')[1]}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block mt-3 text-sm text-[#8A2BE2] hover:underline"
-                      >
-                        View Metadata
-                      </a>
+          {/* Certificates Section */}
+          <section className="mb-8 pb-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Your Certificates</h3>
+            {certificates.length === 0 ? (
+              <p className="text-gray-500 pl-2">No certificates found.</p>
+            ) : (
+              <ul className="space-y-3 pl-2">
+                {certificates.map((cert) => (
+                  <li key={cert.id} className="bg-blue-50 hover:bg-blue-100 transition rounded-md px-4 py-2 border-l-4 border-blue-400 shadow-sm">
+                    <div className="font-semibold">{cert.name}</div>
+                    <div className="text-sm text-gray-600">
+                      from <span className="font-medium">{cert.institute}</span>
+                      {' '}({new Date(cert.issueDate * 1000).toLocaleDateString()})
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <FiAward className="text-3xl text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900">No certificates yet</h3>
-                  <p className="mt-1 text-gray-500">Request certificates from your institution below</p>
-                </div>
-              )}
-            </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-            {/* Certificate Request Form */}
-            <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-              <h2 className="text-xl font-semibold mb-6 flex items-center">
-                <FiSend className="mr-2 text-[#8A2BE2]" />
-                Request New Certificate
-              </h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Provider Wallet Address
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
-                    value={providerAddress}
-                    onChange={(e) => setProviderAddress(e.target.value)}
-                    placeholder="0x..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Certificate Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
-                    value={certificateName}
-                    onChange={(e) => setCertificateName(e.target.value)}
-                    placeholder="e.g., Bachelor of Science in Computer Science"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Additional Message
-                  </label>
-                  <textarea
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
-                    rows={4}
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Any additional information for the provider..."
-                  />
-                </div>
-
-                <button
-                  onClick={handleRequestCertificate}
-                  disabled={!providerAddress || !certificateName}
-                  className="w-full bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white py-3 px-6 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  <FiSend className="mr-2" />
-                  Submit Request
-                </button>
+          {/* Request Certificate Section */}
+          <section className="mb-8 pb-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Request Certificate Issuance</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Provider Address:</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={providerAddress}
+                  onChange={(e) => setProviderAddress(e.target.value)}
+                  placeholder="Enter provider's wallet address"
+                />
               </div>
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Certificate Name:</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  value={certificateName}
+                  onChange={(e) => setCertificateName(e.target.value)}
+                  placeholder="Enter certificate name"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">Message (optional):</label>
+                <textarea
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[80px]"
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Enter a message (optional)"
+                />
+              </div>
+              <button
+                onClick={handleRequestCertificate}
+                disabled={requesting}
+                className={`w-full md:w-auto bg-blue-600 text-white font-semibold px-6 py-2 rounded-md shadow hover:bg-blue-700 transition disabled:bg-blue-300 disabled:cursor-not-allowed`}
+              >
+                {requesting ? 'Requesting...' : 'Request Certificate'}
+              </button>
             </div>
-          </>
-        ) : (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-              <FiUser className="text-3xl text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Wallet not connected</h3>
-            <p className="text-gray-500">Please connect your wallet to view your dashboard</p>
-          </div>
-        )}
+          </section>
 
-        {/* Certificate Search Component */}
-        <CertificateSearch />
-      </div>
+          {/* Certificate Search Section */}
+          <section className="mt-8">
+            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Search Certificates</h3>
+            <CertificateSearch />
+          </section>
+        </>
+      )}
     </div>
   );
 };

@@ -5,7 +5,6 @@ import CertificateNFTABI from '../../artifacts/contracts/CertificateNFT.sol/Cert
 import { useEthereum } from '@/contexts/EthereumContext';
 import { uploadFileToIPFS, uploadJSONToIPFS } from '../../utils/ipfs';
 
-// Type definitions
 export interface Certificate {
   id: string;
   name: string;
@@ -83,6 +82,10 @@ interface ContractContextType {
   ) => Promise<void>;
   cancelCertificateRequest: (requestId: number) => Promise<void>;
   checkInstituteAuthorization: (address: string) => Promise<boolean>;
+
+  // Student Dashboard Functions
+  fetchStudentProfile: (address: string) => Promise<StudentMetadata | null>;
+  requestCertificateIssuance: (providerAddress: string, certificateName: string, message: string) => Promise<void>;
 }
 
 interface ContractContextProviderProps {
@@ -92,7 +95,7 @@ interface ContractContextProviderProps {
 const ContractContext = createContext<ContractContextType | null>(null);
 
 export const ContractContextProvider = ({ children }: ContractContextProviderProps) => {
-  const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
+  const userRegistryAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || '';
   const certificateNFTAddress = process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS || '';
   const { account, provider } = useEthereum();
 
@@ -199,6 +202,8 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
     // Call contract to register user
     const tx = await contract.registerUser(role, cid);
     await tx.wait();
+
+    await fetchUserData(); // Refresh user data after registration
   };
 
   // Get certificates by wallet address
@@ -272,11 +277,8 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
   const fetchProviderCertificateRequests = async (): Promise<CertificateRequest[]> => {
     if (!provider || !account) return [];
     const signer = await provider.getSigner();
-    const certContract = new ethers.Contract(
-      certificateNFTAddress,
-      CertificateNFTABI.abi,
-      signer
-    );
+    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+
     const requestCount: number = Number(await certContract.requestCounter());
     const requests: CertificateRequest[] = [];
     for (let i = 1; i <= requestCount; i++) {
@@ -289,7 +291,7 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
           name: req.name,
           message: req.message,
           studentMetadataHash: req.studentMetadataHash,
-          approved: req.approved
+          approved: req.approved,
         });
       }
     }
@@ -309,11 +311,7 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
   const fetchProviderMetadata = async (address: string): Promise<ProviderMetadata | null> => {
     if (!provider) return null;
     const signer = await provider.getSigner();
-    const registryContract = new ethers.Contract(
-      userRegistryAddress!,
-      UserRegistryABI.abi,
-      signer
-    );
+    const registryContract = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
     const [, metadataHash] = await registryContract.getUser(address);
     if (metadataHash) {
       const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
@@ -330,28 +328,15 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
   ): Promise<void> => {
     if (!provider || !account) throw new Error('Wallet not connected');
     const signer = await provider.getSigner();
-    const certContract = new ethers.Contract(
-      certificateNFTAddress,
-      CertificateNFTABI.abi,
-      signer
-    );
-    const tx = await certContract.approveCertificateRequest(
-      requestId,
-      certificateType,
-      tokenURI,
-      institutionName
-    );
+    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+    const tx = await certContract.approveCertificateRequest(requestId, certificateType, tokenURI, institutionName);
     await tx.wait();
   };
 
   const cancelCertificateRequest = async (requestId: number): Promise<void> => {
     if (!provider || !account) throw new Error('Wallet not connected');
     const signer = await provider.getSigner();
-    const certContract = new ethers.Contract(
-      certificateNFTAddress,
-      CertificateNFTABI.abi,
-      signer
-    );
+    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
     const tx = await certContract.cancelCertificateRequest(requestId);
     await tx.wait();
   };
@@ -359,12 +344,56 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
   const checkInstituteAuthorization = async (address: string): Promise<boolean> => {
     if (!provider) return false;
     const signer = await provider.getSigner();
-    const certContract = new ethers.Contract(
-      certificateNFTAddress,
-      CertificateNFTABI.abi,
-      signer
-    );
+    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
     return await certContract.authorizedInstitutes(address);
+  };
+
+  // *** New Student Dashboard Functions ***
+
+  // Fetch student profile metadata from IPFS via UserRegistry contract
+  const fetchStudentProfile = async (address: string): Promise<StudentMetadata | null> => {
+    if (!provider) return null;
+    try {
+      const contract = getContract(provider);
+      if (!contract) throw new Error('User Registry contract not initialized');
+      const [, ipfsHash] = await contract.getUser(address);
+      if (!ipfsHash) return null;
+
+      const response = await fetch(`https://ipfs.io/ipfs/${ipfsHash}`);
+      if (!response.ok) throw new Error('Failed to fetch profile metadata');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching student profile:', error);
+      return null;
+    }
+  };
+
+  // Request certificate issuance by calling certificateNFT contract
+  const requestCertificateIssuance = async (
+    providerAddress: string,
+    certificateName: string,
+    message: string
+  ): Promise<void> => {
+    if (!provider || !account) throw new Error('Wallet not connected');
+    if (!certificateNFTAddress) throw new Error('CertificateNFT contract address not set');
+
+    const signer = await provider.getSigner();
+    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+
+    // Fetch student's metadata hash for the request
+    const contract = getContract(provider);
+    if (!contract) throw new Error('User Registry contract not initialized');
+    const [, studentMetadataHash] = await contract.getUser(account);
+
+    // Call requestCertificate function on contract
+    const tx = await certContract.requestCertificate(
+      providerAddress,
+      certificateName,
+      message,
+      studentMetadataHash
+    );
+    await tx.wait();
   };
 
   return (
@@ -387,6 +416,8 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         approveCertificateRequest,
         cancelCertificateRequest,
         checkInstituteAuthorization,
+        fetchStudentProfile,
+        requestCertificateIssuance,
       }}
     >
       {children}
