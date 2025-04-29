@@ -1,85 +1,54 @@
 import { useEffect, useState } from 'react';
-import { useEthereum } from '@/contexts/EthereumContext';
-import { ethers } from 'ethers';
-import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
+import { useContractContext } from '@/contexts/ContractContext';
 
-interface UserData {
+interface RegisteredUser {
   address: string;
   role: string;
   metadataHash: string;
 }
 
 export default function UserDashboard() {
-  const { account, provider } = useEthereum();
-  const [allUsers, setAllUsers] = useState<UserData[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const { getAllRegisteredUsers, getRegisteredUser } = useContractContext();
+  const [allUsers, setAllUsers] = useState<RegisteredUser[]>([]);
+  const [selectedUser, setSelectedUser] = useState<RegisteredUser | null>(null);
   const [searchAddress, setSearchAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch all users on component mount
   useEffect(() => {
-    const fetchAllUsers = async () => {
+    const loadUsers = async () => {
       try {
         setLoading(true);
         setError(null);
-
-        if (!provider) {
-          throw new Error('Please connect your wallet first');
-        }
-
-        const ethersProvider = new ethers.BrowserProvider(window.lukso);
-        const contract = new ethers.Contract(
-          process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!,
-          UserRegistryABI.abi,
-          ethersProvider
-        );
-
-        const addresses: string[] = await contract.getAllUsers();
-        const usersData = await Promise.all(
-          addresses.map(async (address) => {
-            const [role, metadataHash] = await contract.getUser(address);
-            return { address, role, metadataHash };
-          })
-        );
-
-        setAllUsers(usersData);
+        const users = await getAllRegisteredUsers();
+        setAllUsers(users);
       } catch (err) {
-        console.error('Error fetching users:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load users');
+        handleError(err, 'Failed to load users');
       } finally {
         setLoading(false);
       }
     };
-
-    fetchAllUsers();
-  }, [provider]);
+    loadUsers();
+  }, [getAllRegisteredUsers]);
 
   // Fetch individual user data
   const fetchUserData = async (address: string) => {
     try {
       setLoading(true);
       setError(null);
-
-      if (!provider) {
-        throw new Error('Please connect your wallet first');
-      }
-
-      const ethersProvider = new ethers.BrowserProvider(window.lukso);
-      const contract = new ethers.Contract(
-        process.env.NEXT_PUBLIC_CONTRACT_ADDRESS!,
-        UserRegistryABI.abi,
-        ethersProvider
-      );
-
-      const [role, metadataHash] = await contract.getUser(address);
-      setSelectedUser({ address, role, metadataHash });
+      const user = await getRegisteredUser(address);
+      setSelectedUser(user);
     } catch (err) {
-      console.error('Error fetching user:', err);
-      setError(err instanceof Error ? err.message : 'User not found');
+      handleError(err, 'User not found');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleError = (error: unknown, defaultMessage: string) => {
+    console.error(error);
+    setError(error instanceof Error ? error.message : defaultMessage);
   };
 
   if (loading) {
