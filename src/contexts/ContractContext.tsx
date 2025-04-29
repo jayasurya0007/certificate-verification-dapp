@@ -3,8 +3,9 @@ import { ethers } from 'ethers';
 import UserRegistryABI from '../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
 import CertificateNFTABI from '../../artifacts/contracts/CertificateNFT.sol/CertificateNFT.json';
 import { useEthereum } from '@/contexts/EthereumContext';
+import { uploadFileToIPFS, uploadJSONToIPFS } from '../../utils/ipfs';
 
-// Interface Definitions
+// Type definitions
 export interface Certificate {
   id: string;
   name: string;
@@ -58,6 +59,11 @@ interface ContractContextType {
   refetchUserData: () => void;
   getAllRegisteredUsers: () => Promise<RegisteredUser[]>;
   getRegisteredUser: (address: string) => Promise<RegisteredUser>;
+  registerUser: (
+    role: 'student' | 'provider',
+    studentData?: { name: string; email: string; studentId: string },
+    providerData?: { institutionName: string; accreditationNumber: string; document: File }
+  ) => Promise<void>;
 
   // Certificate NFT Functions
   getCertificatesByAddress: (address: string) => Promise<Certificate[]>;
@@ -152,6 +158,47 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
 
     const [role, metadataHash] = await contract.getUser(address);
     return { address, role, metadataHash };
+  };
+
+  // Register user (student or provider)
+  const registerUser = async (
+    role: 'student' | 'provider',
+    studentData?: { name: string; email: string; studentId: string },
+    providerData?: { institutionName: string; accreditationNumber: string; document: File }
+  ) => {
+    if (!provider || !account) throw new Error('Please connect your wallet first');
+    if (!userRegistryAddress) throw new Error('Contract address not configured');
+
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
+
+    let metadata: any;
+
+    if (role === 'student') {
+      if (!studentData) throw new Error('Missing student data');
+      metadata = {
+        name: studentData.name,
+        email: studentData.email,
+        studentId: studentData.studentId,
+      };
+    } else {
+      if (!providerData) throw new Error('Missing provider data');
+      // Upload provider document to IPFS
+      const docResponse = await uploadFileToIPFS(providerData.document);
+      metadata = {
+        institutionName: providerData.institutionName,
+        accreditationNumber: providerData.accreditationNumber,
+        documentCid: docResponse.cid,
+      };
+    }
+
+    // Upload metadata to IPFS
+    const { cid } = await uploadJSONToIPFS(metadata);
+    if (!cid) throw new Error('Failed to upload metadata to IPFS');
+
+    // Call contract to register user
+    const tx = await contract.registerUser(role, cid);
+    await tx.wait();
   };
 
   // Get certificates by wallet address
@@ -329,6 +376,7 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         refetchUserData: fetchUserData,
         getAllRegisteredUsers,
         getRegisteredUser,
+        registerUser,
         getCertificatesByAddress,
         checkIsOwner,
         authorizeInstitute,

@@ -1,13 +1,10 @@
 import { useState } from 'react';
 import { FiUser, FiHome, FiUpload, FiFileText, FiShield } from 'react-icons/fi';
 import { useEthereum } from '@/contexts/EthereumContext';
-import { ethers } from 'ethers';
-import { uploadFileToIPFS, uploadJSONToIPFS } from '../../../utils/ipfs';
-import UserRegistryABI from '../../../artifacts/contracts/UserRegistry.sol/UserRegistry.json';
+import { useContractContext } from '@/contexts/ContractContext'; // Import context
 import StudentDashboard from '../StudentDashboard/StudentDashboard';
 import ProviderDashboard from '../ProviderDashboard/ProviderDashboard';
 
-// Types
 interface StudentFormData {
   name: string;
   email: string;
@@ -42,7 +39,8 @@ const Spinner = () => (
 );
 
 export default function SplitRegistrationForm() {
-  const { account, provider } = useEthereum();
+  const { account } = useEthereum();
+  const { registerUser } = useContractContext();
   const [formData, setFormData] = useState<FormState>(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,54 +65,30 @@ export default function SplitRegistrationForm() {
       setError(null);
       setIsSubmitting(true);
 
-      if (!account || !provider) {
-        throw new Error('Please connect your wallet first');
-      }
-
+      if (!account) throw new Error('Please connect your wallet first');
       validateForm();
 
-      // Prepare metadata without role (role is stored separately in contract)
-      let metadata: any;
-      let documentCid = '';
-
       if (formData.role === 'student') {
-        metadata = {
-          name: formData.name,
-          email: formData.email,
-          studentId: formData.studentId
-        };
+        await registerUser(
+          'student',
+          {
+            name: formData.name,
+            email: formData.email,
+            studentId: formData.studentId,
+          },
+          undefined
+        );
       } else {
-        // Upload provider document first
-        if (!formData.document) throw new Error('Document is required');
-        const docResponse = await uploadFileToIPFS(formData.document);
-        documentCid = docResponse.cid;
-        
-        metadata = {
-          institutionName: formData.institutionName,
-          accreditationNumber: formData.accreditationNumber,
-          documentCid
-        };
+        await registerUser(
+          'provider',
+          undefined,
+          {
+            institutionName: formData.institutionName,
+            accreditationNumber: formData.accreditationNumber,
+            document: formData.document!,
+          }
+        );
       }
-
-      // Verify metadata upload
-      const { cid } = await uploadJSONToIPFS(metadata);
-      if (!cid) throw new Error('Failed to upload metadata to IPFS');
-
-      // Contract interaction
-      const contractAddress = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
-      if (!contractAddress) {
-        throw new Error('Contract address not configured');
-      }
-
-      const signer = await provider.getSigner();
-      const contract = new ethers.Contract(
-        contractAddress,
-        UserRegistryABI.abi,
-        signer
-      );
-
-      const tx = await contract.registerUser(formData.role, cid);
-      await tx.wait();
 
       setRegistrationComplete(true);
       setUserRole(formData.role);
@@ -139,7 +113,6 @@ export default function SplitRegistrationForm() {
     });
   };
 
-  // After successful registration, show the appropriate dashboard
   if (registrationComplete && userRole) {
     return userRole === 'student' ? <StudentDashboard /> : <ProviderDashboard />;
   }
