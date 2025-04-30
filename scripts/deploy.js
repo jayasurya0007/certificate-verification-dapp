@@ -6,7 +6,7 @@ async function main() {
 
   // Get the contract factory
   const CertificateRegistry = await ethers.getContractFactory('UserRegistry');
-
+// UserRegistry CertificateNFT
   // Set gas price and gas limit
   const gasPrice = ethers.parseUnits('10', 'gwei'); // Adjust as needed
 

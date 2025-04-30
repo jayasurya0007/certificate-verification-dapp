@@ -301,26 +301,49 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
   // Provider Dashboard Functions
   const fetchProviderCertificateRequests = async (): Promise<CertificateRequest[]> => {
     if (!provider || !account) return [];
-    const signer = await provider.getSigner();
-    const certContract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
-
-    const requestCount: number = Number(await certContract.requestCounter());
-    const requests: CertificateRequest[] = [];
-    for (let i = 1; i <= requestCount; i++) {
-      const req = await certContract.certificateRequests(i);
-      if (!req.approved && req.institute.toLowerCase() === account.toLowerCase()) {
-        requests.push({
-          id: i,
-          student: req.student,
-          institute: req.institute,
-          name: req.name,
-          message: req.message,
-          studentMetadataHash: req.studentMetadataHash,
-          approved: req.approved,
+    
+    try {
+      const signer = await provider.getSigner();
+      const certContract = new ethers.Contract(
+        certificateNFTAddress,
+        CertificateNFTABI.abi,
+        signer
+      );
+  
+      // Get total request count
+      const requestCount: number = Number(await certContract.requestCounter());
+      const requests: CertificateRequest[] = [];
+  
+      // Parallelize requests using Promise.all
+      const requestPromises = Array.from({ length: requestCount }, (_, i) => i + 1)
+        .map(async (requestId) => {
+          try {
+            const req = await certContract.certificateRequests(requestId);
+            if (req.institute.toLowerCase() === account.toLowerCase() && !req.approved) {
+              return {
+                id: requestId,
+                student: req.student,
+                institute: req.institute,
+                name: req.name,
+                message: req.message,
+                studentMetadataHash: req.studentMetadataHash,
+                approved: req.approved,
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching request ${requestId}:`, error);
+            return null;
+          }
         });
-      }
+  
+      // Wait for all promises and filter valid requests
+      const results = await Promise.all(requestPromises);
+      return results.filter(Boolean) as CertificateRequest[];
+  
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      return [];
     }
-    return requests;
   };
 
   const fetchStudentMetadata = async (studentAddress: string, metadataHash: string): Promise<StudentMetadata | null> => {

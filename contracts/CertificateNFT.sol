@@ -42,6 +42,11 @@ contract CertificateNFT is ERC721URIStorage, Ownable {
         string certificateType
     );
 
+    event CertificateRequestCancelled(
+    uint256 indexed requestId,
+    address indexed student,
+    address indexed institute
+);
     event CertificateRequested(
         uint256 indexed requestId,
         address indexed student,
@@ -66,7 +71,15 @@ contract CertificateNFT is ERC721URIStorage, Ownable {
     function revokeInstitute(address institute) external onlyOwner {
         authorizedInstitutes[institute] = false;
     }
-
+    function cancelCertificateRequest(uint256 requestId) external {
+    CertificateRequest storage request = certificateRequests[requestId];
+    require(request.student != address(0), "Request does not exist");
+    require(msg.sender == request.institute, "Not the requesting institute");
+    require(!request.approved, "Request already approved");
+    
+    delete certificateRequests[requestId];
+    emit CertificateRequestCancelled(requestId, request.student, msg.sender);
+}
     function issueCertificate(
         address student,
         string memory name,

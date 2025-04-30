@@ -121,14 +121,30 @@ const ProviderDashboard = () => {
 
   const handleCancel = async (requestId: number) => {
     if (!account) return;
+    
     try {
+      // Double-check authorization
+      const isAuthorized = await checkInstituteAuthorization(account);
+      if (!isAuthorized) {
+        alert('Authorization revoked - please reconnect');
+        return;
+      }
+  
+      // Execute cancellation
       await cancelCertificateRequest(requestId);
+      
+      // Optimistic UI update
+      setRequests(prev => prev.filter(r => r.id !== requestId));
+      
       alert('Request cancelled successfully!');
+  
+    } catch (err) {
+      console.error('Cancellation failed:', err);
+      alert(`Cancellation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      
+      // Refresh from blockchain
       const updatedRequests = await fetchProviderCertificateRequests();
       setRequests(updatedRequests);
-    } catch (err) {
-      console.error('Error cancelling request:', err);
-      alert('Failed to cancel request');
     }
   };
 
