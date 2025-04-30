@@ -86,6 +86,9 @@ interface ContractContextType {
   // Student Dashboard Functions
   fetchStudentProfile: (address: string) => Promise<StudentMetadata | null>;
   requestCertificateIssuance: (providerAddress: string, certificateName: string, message: string) => Promise<void>;
+
+  // New function to fetch pending providers
+  fetchPendingProviders: () => Promise<RegisteredUser[]>;
 }
 
 interface ContractContextProviderProps {
@@ -151,6 +154,28 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         return { address, role, metadataHash };
       })
     );
+  };
+
+  // Fetch all registered users (for admin dashboard)
+  const fetchPendingProviders = async (): Promise<RegisteredUser[]> => {
+    if (!provider) return [];
+    
+    // Get all registered providers
+    const allUsers = await getAllRegisteredUsers();
+    const providers = allUsers.filter(user => user.role.toLowerCase() === 'provider');
+  
+    // Check authorization status
+    const certContract = getCertificateContract(provider);
+    if (!certContract) return [];
+  
+    const pendingProviders = await Promise.all(
+      providers.map(async (provider) => {
+        const isAuthorized = await certContract.authorizedInstitutes(provider.address);
+        return { ...provider, isAuthorized };
+      })
+    );
+  
+    return pendingProviders.filter(provider => !provider.isAuthorized);
   };
 
   // Get a registered user by address
@@ -418,6 +443,7 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         checkInstituteAuthorization,
         fetchStudentProfile,
         requestCertificateIssuance,
+        fetchPendingProviders,
       }}
     >
       {children}
