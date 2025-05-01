@@ -89,6 +89,9 @@ interface ContractContextType {
 
   // New function to fetch pending providers
   fetchPendingProviders: () => Promise<RegisteredUser[]>;
+
+  //search student by id
+  getStudentByStudentId: (studentId: string) => Promise<{ address: string, metadata: StudentMetadata } | null>;
 }
 
 interface ContractContextProviderProps {
@@ -104,6 +107,32 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  //search student by id
+  const getStudentByStudentId = async (studentId: string): Promise<{ address: string, metadata: StudentMetadata } | null> => {
+    if (!provider) return null;
+    
+    try {
+      const allUsers = await getAllRegisteredUsers();
+      const students = allUsers.filter(user => user.role.toLowerCase() === 'student');
+  
+      for (const student of students) {
+        try {
+          const metadata = await fetchStudentMetadata(student.address, student.metadataHash);
+          // Case-insensitive comparison
+          if (metadata?.studentId?.toLowerCase() === studentId.toLowerCase()) {
+            return { address: student.address, metadata };
+          }
+        } catch (error) {
+          console.error(`Error fetching metadata for ${student.address}:`, error);
+        }
+      }
+      return null;
+    } catch (error) {
+      console.error('Error searching for student:', error);
+      return null;
+    }
+  };
 
   // User Registry contract instance getter
   const getContract = (provider: any): ethers.Contract | null => {
@@ -467,6 +496,7 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         fetchStudentProfile,
         requestCertificateIssuance,
         fetchPendingProviders,
+        getStudentByStudentId,
       }}
     >
       {children}

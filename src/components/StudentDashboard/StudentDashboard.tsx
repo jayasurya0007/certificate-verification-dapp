@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useEthereum } from '@/contexts/EthereumContext';
 import { useContractContext,StudentMetadata,ProviderMetadata } from '@/contexts/ContractContext';
-import CertificateSearch from '../CertificateSearch/CertificateSearch';
+// import CertificateSearch from '../CertificateSearch/CertificateSearch';
 import { FiUser, FiMail, FiBook, FiChevronDown } from 'react-icons/fi';
 
 interface ProviderInfo {
@@ -267,12 +267,11 @@ const StudentDashboard = () => {
               </button>
             </div>
           </section>
-
-          {/* Certificate Search Section */}
+          {/* Certificate Search Section
           <section className="mt-8">
             <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Verify Certificates</h3>
             <CertificateSearch />
-          </section>
+          </section> */}
         </>
       )}
     </div>

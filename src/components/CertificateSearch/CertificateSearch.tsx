@@ -1,31 +1,67 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
-import { FiSearch, FiAward, FiCalendar, FiUser, FiFileText, FiLink } from 'react-icons/fi';
+import { FiSearch, FiAward, FiCalendar, FiUser, FiFileText, FiLink, FiBook, FiHash } from 'react-icons/fi';
 import { useContractContext, Certificate } from '@/contexts/ContractContext';
 
 const CertificateSearch = () => {
-  const { getCertificatesByAddress } = useContractContext();
-  const [searchAddress, setSearchAddress] = useState('');
+  const { getCertificatesByAddress, getStudentByStudentId } = useContractContext();
+  const [searchInput, setSearchInput] = useState('');
+  const [searchFilter, setSearchFilter] = useState('');
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
   const isValidAddress = (address: string) => ethers.isAddress(address);
+  const isValidStudentId = (id: string) => /^[a-zA-Z0-9]+$/.test(id);// Adjust regex based on your ID format
 
   const handleSearch = async () => {
-    if (!isValidAddress(searchAddress)) {
-      setError('Please enter a valid Ethereum address');
+    if (!searchInput) {
+      setError('Please enter a wallet address or student ID');
       return;
     }
-
+  
     try {
       setIsLoading(true);
       setError('');
       setCertificates([]);
-
-      const certificatesData = await getCertificatesByAddress(searchAddress);
-
-      setCertificates(certificatesData);
+  
+      let studentAddress = searchInput;
+      let resolvedViaStudentId = false;
+  
+      // Check if input is a student ID (alphanumeric)
+      if (isValidStudentId(searchInput) && !isValidAddress(searchInput)) {
+        const student = await getStudentByStudentId(searchInput);
+        if (!student) {
+          setError('No student found with this ID');
+          return;
+        }
+        studentAddress = student.address;
+        resolvedViaStudentId = true;
+      } else if (!isValidAddress(searchInput)) {
+        setError('Invalid input - must be wallet address or student ID');
+        return;
+      }
+  
+      // Get certificates for the resolved address
+      const certificatesData = await getCertificatesByAddress(studentAddress);
+      
+      // Apply secondary filter
+      const filteredCertificates = certificatesData.filter(cert => {
+        const searchLower = searchFilter.toLowerCase();
+        return (
+          cert.name.toLowerCase().includes(searchLower) ||
+          cert.certificateType.toLowerCase().includes(searchLower) ||
+          cert.institute.toLowerCase().includes(searchLower)
+        );
+      });
+  
+      // Show warning if resolved via student ID
+      if (resolvedViaStudentId && filteredCertificates.length === 0) {
+        setError('Student ID found but no certificates associated with this student');
+        return;
+      }
+  
+      setCertificates(filteredCertificates);
     } catch (err) {
       console.error('Search error:', err);
       setError('Something went wrong while fetching certificates.');
@@ -46,26 +82,42 @@ const CertificateSearch = () => {
 
       <div className="mb-6">
         <p className="text-gray-600 mb-4">
-          Verify the authenticity of educational credentials by searching with a wallet address.
+          Verify educational credentials using wallet address/student ID and filter results.
         </p>
 
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiUser className="h-5 w-5 text-gray-400" />
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiHash className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                placeholder="Wallet address (0x...) or Student ID"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
             </div>
-            <input
-              type="text"
-              className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
-              placeholder="Enter wallet address (0x...)"
-              value={searchAddress}
-              onChange={(e) => setSearchAddress(e.target.value)}
-            />
+
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiBook className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8A2BE2] focus:border-transparent"
+                placeholder="Filter by name, type, or institute"
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+              />
+            </div>
           </div>
+
           <button
             onClick={handleSearch}
             className="bg-gradient-to-r from-[#8A2BE2] to-[#4B0082] text-white py-3 px-6 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center whitespace-nowrap"
-            disabled={isLoading || !searchAddress}
+            disabled={isLoading || !searchInput}
           >
             {isLoading ? (
               <>
@@ -94,7 +146,7 @@ const CertificateSearch = () => {
             ) : (
               <>
                 <FiSearch className="mr-2" />
-                Verify
+                Search Certificates
               </>
             )}
           </button>
@@ -130,9 +182,14 @@ const CertificateSearch = () => {
             <div key={cert.id} className="border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-shadow">
               <div className="flex flex-col md:flex-row justify-between mb-4">
                 <h3 className="font-bold text-xl text-gray-900">{cert.name}</h3>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#B9FF66] text-[#191A23] mt-2 md:mt-0">
-                  {cert.certificateType}
-                </span>
+                <div className="flex flex-col items-end mt-2 md:mt-0">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[#B9FF66] text-[#191A23] mb-2">
+                    ID: {cert.id}
+                  </span>
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-[#8A2BE2]">
+                    {cert.certificateType}
+                  </span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -185,13 +242,13 @@ const CertificateSearch = () => {
         </div>
       ) : (
         !isLoading &&
-        searchAddress && (
+        searchInput && (
           <div className="text-center py-12">
             <div className="mx-auto w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
               <FiFileText className="text-3xl text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900">No certificates found</h3>
-            <p className="mt-2 text-gray-500">There are no certificates associated with this wallet address</p>
+            <p className="mt-2 text-gray-500">No matching certificates for the provided search criteria</p>
           </div>
         )
       )}
