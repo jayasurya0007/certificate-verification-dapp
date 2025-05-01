@@ -1,65 +1,64 @@
-# 🏗️ LUKSO dApp Boilerplate
+# Anti-Fake
 
-This repository is a TypeScript/Next.js based open-source framework to build LUKSO dApps with ease.
+**Anti-Fake** is a blockchain-powered platform that enables institutions to issue verifiable academic certificates as NFTs, helping to eliminate fraud and streamline certificate verification processes. Powered by **LUKSO Universal Profiles** and **NFTs**, this platform ensures the authenticity of academic credentials and facilitates seamless verification by recruiters.
 
-Demo URL: <https://boilerplate.lukso.tech/>
+## Problem it Solves
 
-More information is available on our 👉 [technical documentation](https://docs.lukso.tech/learn/introduction).
-
-![Front Page](./img/front_page.png)
+Anti-Fake solves the problem of fake academic certificates by enabling institutions to issue NFTs as verifiable credentials. Recruiters can instantly verify these certificates on-chain, eliminating the need for manual checks or handling forged documents. 
 
 ## Features
 
-- Reusable components for Universal Profiles, Assets, and Vaults
-- Shared contexts for Profiles, Networks, and the Extension
-- Network, interface, and metadata detection
-- Multiple Providers: [Web3 Onboard](https://onboard.blocknative.com/docs/overview/introduction), [Wallet Connect](https://docs.walletconnect.com/web3modal/about), or plain injection
-- Built-in [`ethers.js`](https://docs.ethers.org/), [`erc725.js`](https://docs.lukso.tech/tools/erc725js/getting-started), [`lsp-smart-contracts`](https://docs.lukso.tech/tools/lsp-smart-contracts/getting-started)
-- Uses `Tailwind`, `Prettier`, `TypeScript`
+- **Students**: Register and store academic certificates securely on their LUKSO Universal Profile wallet.
+- **Providers**: Institutions (universities, colleges) can issue verified certificates after authorization.
+- **Recruiters**: Instantly verify the authenticity of certificates issued by legitimate institutions.
 
-> **INFO**: You can switch between a regular provider and [Web3-Onboard](https://onboard.blocknative.com/) by setting the `useOnboard` variable within the [EthereumContext](/src/contexts/EthereumContext.tsx).
+## Technologies Used
 
-## Development
+- **LUKSO**
+- **Solidity**
+- **Next.js + TypeScript**
+- **Hardhat**
+- **IPFS**
+- **Smart Contracts**
+- **TailwindCSS**
+- **Ethers.js**
+- **Vercel**
+.
 
-Clone the repository:
+## Getting Started
 
-```bash
-git clone git@github.com:lukso-network/tools-dapp-boilerplate.git
-```
+### Prerequisites
 
-Install all packages and libraries:
+Before you begin, ensure you have the following installed:
 
-```bash
-npm install
-```
+- Node.js (v14 or higher)
+- Yarn or npm
+- Hardhat
+- Ethereum Wallet (e.g., MetaMask)
 
-Setup local environment variables:
+### Installation
 
-> If you use Wallet Connect, you will have to import a Project ID. You can simply copy the example environment file and input the parameter.
+1. **Clone the repository**
 
-```bash
-cp .env.local.example .env.local
-```
+   ```bash
+   git clone https://github.com/jayasurya0007/anti-fake-certificates.git
+   cd anti-fake-certificates
+   
+2. **Install dependencies**
 
-Run the development server:
+   ```bash
+   npm install
+   
+3. **Deploy the smart contracts**
 
-```bash
-npm run dev
-```
+   ```bash
+   npx hardhat run scripts/deploy.js --network luksoTestnet
 
-## Tools
+4. **Start the development server**
 
-- [`Next.js`](https://nextjs.org/): React Framework
-- [`@lukso/lsp-smart-contracts`](https://www.npmjs.com/package/@lukso/lsp-smart-contracts): Schemas and Interfaces for LSPs
-- [`@web3-onboard/core`](https://www.npmjs.com/package/@web3-onboard/core): Connecting with various Browser Extensions
-- [`@erc725/erc725.js`](https://www.npmjs.com/package/@erc725/erc725.js): ERC725 Smart Contract Interactions
-- [`ethers`](https://www.npmjs.com/package/ethers): Ethereum Library for Blockchain Interactions
+   ```bash
+   npx next dev
 
-## Resources
+  
 
-- [LUKSO Documentation](https://docs.lukso.tech/)
-- [Next.js Documentation](https://nextjs.org/docs)
 
-### Community Content
-
-- [Speedrun the lukso-network/tools-dapp-boilerplate nextjs starter - YouTube](https://www.youtube.com/watch?v=OxJi7O7ts0Q) by tantodefi
