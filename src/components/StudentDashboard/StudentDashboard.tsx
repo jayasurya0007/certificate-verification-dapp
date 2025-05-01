@@ -3,6 +3,7 @@ import { useEthereum } from '@/contexts/EthereumContext';
 import { useContractContext,StudentMetadata,ProviderMetadata } from '@/contexts/ContractContext';
 // import CertificateSearch from '../CertificateSearch/CertificateSearch';
 import { FiUser, FiMail, FiBook, FiChevronDown } from 'react-icons/fi';
+import { FiExternalLink } from 'react-icons/fi';
 
 interface ProviderInfo {
   address: string;
@@ -173,10 +174,23 @@ const StudentDashboard = () => {
                     key={cert.id} 
                     className="bg-blue-50 hover:bg-blue-100 transition rounded-md px-4 py-2 border-l-4 border-blue-400 shadow-sm"
                   >
-                    <div className="font-semibold">{cert.name}</div>
-                    <div className="text-sm text-gray-600">
-                      Issued by <span className="font-medium">{cert.institute}</span>
-                      {' '}on {new Date(cert.issueDate * 1000).toLocaleDateString()}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="font-semibold">{cert.name}</div>
+                        <div className="text-sm text-gray-600">
+                          Issued by <span className="font-medium">{cert.institute}</span>
+                          {' '}on {new Date(cert.issueDate * 1000).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <a
+                        href={`https://explorer.execution.testnet.lukso.network/token/${process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS}/instance/${cert.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-4 flex items-center text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        <FiExternalLink className="mr-1" />
+                        View on Explorer
+                      </a>
                     </div>
                   </li>
                 ))}
