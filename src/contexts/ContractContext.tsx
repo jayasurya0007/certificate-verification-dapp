@@ -92,6 +92,10 @@ interface ContractContextType {
 
   //search student by id
   getStudentByStudentId: (studentId: string) => Promise<{ address: string, metadata: StudentMetadata } | null>;
+
+  //fetch all registered users(ownerdashboard)
+  revokeInstitute: (instituteAddress: string) => Promise<void>;
+  fetchAuthorizedProviders: () => Promise<RegisteredUser[]>;
 }
 
 interface ContractContextProviderProps {
@@ -107,6 +111,44 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+
+  // Revoke institute authorization
+  const revokeInstitute = async (instituteAddress: string): Promise<void> => {
+    if (!provider || !account) throw new Error('Wallet not connected');
+    const signer = await provider.getSigner();
+    const contract = new ethers.Contract(certificateNFTAddress, CertificateNFTABI.abi, signer);
+
+    // Verify ownership before proceeding
+    const owner = await contract.owner();
+    if (owner.toLowerCase() !== account.toLowerCase()) {
+      throw new Error('You are not the contract owner');
+    }
+
+    const tx = await contract.revokeInstitute(instituteAddress);
+    await tx.wait();
+  };
+
+  // Fetch authorized providers
+  const fetchAuthorizedProviders = async (): Promise<RegisteredUser[]> => {
+    if (!provider) return [];
+    
+    // Get all registered providers
+    const allUsers = await getAllRegisteredUsers();
+    const providers = allUsers.filter(user => user.role.toLowerCase() === 'provider');
+  
+    // Check authorization status
+    const certContract = getCertificateContract(provider);
+    if (!certContract) return [];
+  
+    const authorizedProviders = await Promise.all(
+      providers.map(async (provider) => {
+        const isAuthorized = await certContract.authorizedInstitutes(provider.address);
+        return { ...provider, isAuthorized };
+      })
+    );
+  
+    return authorizedProviders.filter(provider => provider.isAuthorized);
+  };
 
   //search student by id
   const getStudentByStudentId = async (studentId: string): Promise<{ address: string, metadata: StudentMetadata } | null> => {
@@ -532,6 +574,8 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         requestCertificateIssuance,
         fetchPendingProviders,
         getStudentByStudentId,
+        revokeInstitute,
+        fetchAuthorizedProviders,
       }}
     >
       {children}

@@ -123,7 +123,7 @@ const InstitutionVerifier = () => {
                   </p>
                 </div>
                 
-                {provider.metadata.documentCid && (
+                {/* {provider.metadata.documentCid && (
                   <div>
                     <a
                       href={`https://ipfs.io/ipfs/${provider.metadata.documentCid}`}
@@ -135,7 +135,7 @@ const InstitutionVerifier = () => {
                       View Accreditation Document
                     </a>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           ))}
