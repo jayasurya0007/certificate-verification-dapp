@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { ethers } from 'ethers';
-import { FiSearch, FiAward, FiCalendar, FiUser, FiFileText, FiLink, FiBook, FiHash } from 'react-icons/fi';
+import { FiSearch, FiAward, FiCalendar, FiUser, FiFileText, FiLink, FiBook, FiHash,FiCheckCircle } from 'react-icons/fi';
 import { useContractContext, Certificate } from '@/contexts/ContractContext';
-
+import VerificationModal from '../VerificationModal/VerificationModal';
 const CertificateSearch = () => {
   const { getCertificatesByAddress, getStudentByStudentId } = useContractContext();
   const [searchInput, setSearchInput] = useState('');
@@ -10,6 +10,7 @@ const CertificateSearch = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
 
   const isValidAddress = (address: string) => ethers.isAddress(address);
   const isValidStudentId = (id: string) => /^[a-zA-Z0-9]+$/.test(id);// Adjust regex based on your ID format
@@ -225,18 +226,16 @@ const CertificateSearch = () => {
               </div>
 
               {cert.metadata && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <a
-                    href={convertIpfsUrl(cert.tokenURI)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-[#8A2BE2] hover:underline font-medium"
-                  >
-                    <FiLink className="mr-2" />
-                    View Certificate Metadata
-                  </a>
-                </div>
-              )}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <button
+                      onClick={() => setSelectedCertificate(cert)}
+                      className="inline-flex items-center bg-[#8A2BE2] text-white px-4 py-2 rounded-lg hover:bg-[#6A1EBA] transition-colors"
+                    >
+                      <FiCheckCircle className="mr-2" />
+                      Verify Certificate
+                    </button>
+                  </div>
+                )}
             </div>
           ))}
         </div>
@@ -252,6 +251,13 @@ const CertificateSearch = () => {
           </div>
         )
       )}
+
+      {selectedCertificate && (
+          <VerificationModal
+            certificate={selectedCertificate}
+            onClose={() => setSelectedCertificate(null)}
+          />
+        )}
     </div>
   );
 };

@@ -100,7 +100,8 @@ const ProviderDashboard = () => {
         institution: {
           name: providerMetadata.institutionName,
           accreditationNumber: providerMetadata.accreditationNumber,
-          documentCid: providerMetadata.documentCid
+          documentCid: providerMetadata.documentCid,
+          address: account
         }
       };
       const { cid: metadataCid } = await uploadJSONToIPFS(metadata);
