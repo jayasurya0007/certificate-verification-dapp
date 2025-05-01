@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useEthereum } from '@/contexts/EthereumContext';
 import { useContractContext,StudentMetadata,ProviderMetadata } from '@/contexts/ContractContext';
 // import CertificateSearch from '../CertificateSearch/CertificateSearch';
-import { FiUser, FiMail, FiBook, FiChevronDown } from 'react-icons/fi';
+import { FiUser, FiMail, FiBook, FiChevronDown,FiSend,FiAward } from 'react-icons/fi';
 import { FiExternalLink } from 'react-icons/fi';
+import Skeleton from 'react-loading-skeleton';
 
 interface ProviderInfo {
   address: string;
@@ -131,165 +132,208 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto my-8 p-6 bg-white rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-center text-blue-700 mb-8">Student Dashboard</h2>
-
-      {isLoading ? (
-        <div className="flex justify-center items-center h-32">
-          <span className="text-gray-500">Loading Dashboard...</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-4 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6 sm:mb-8 text-center">
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Student Dashboard
+          </h1>
+          <p className="mt-2 text-sm sm:text-base text-gray-600">Manage your academic credentials and certificates</p>
         </div>
-      ) : (
-        <>
-          {/* Profile Section */}
-          <section className="mb-8 pb-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Profile</h3>
-            <div className="space-y-2 pl-2">
-              <div className="flex items-center gap-2 text-gray-700">
-                <FiUser className="text-blue-500" />
-                <span>Name:</span>
-                <span className="font-medium">{profile.name || 'Not available'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <FiMail className="text-blue-500" />
-                <span>Email:</span>
-                <span className="font-medium">{profile.email || 'Not available'}</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <FiBook className="text-blue-500" />
-                <span>Student ID:</span>
-                <span className="font-medium">{profile.studentId || 'Not available'}</span>
-              </div>
-            </div>
-          </section>
-
-          {/* Certificates Section */}
-          <section className="mb-8 pb-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Your Certificates</h3>
-            {certificates.length === 0 ? (
-              <p className="text-gray-500 pl-2">No certificates issued yet</p>
-            ) : (
-              <ul className="space-y-3 pl-2">
-                {certificates.map((cert) => (
-                  <li 
-                    key={cert.id} 
-                    className="bg-blue-50 hover:bg-blue-100 transition rounded-md px-4 py-2 border-l-4 border-blue-400 shadow-sm"
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="font-semibold">{cert.name}</div>
-                        <div className="text-sm text-gray-600">
-                          Issued by <span className="font-medium">{cert.institute}</span>
-                          {' '}on {new Date(cert.issueDate * 1000).toLocaleDateString()}
-                        </div>
-                      </div>
-                      <a
-                        href={`https://explorer.execution.testnet.lukso.network/token/${process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS}/instance/${cert.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-4 flex items-center text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        <FiExternalLink className="mr-1" />
-                        View on Explorer
-                      </a>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Certificate Request Section */}
-          <section className="mb-8 pb-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Request New Certificate</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Select Institution:</label>
-                <div className="relative">
-                  <select
-                    value={selectedProvider}
-                    onChange={(e) => setSelectedProvider(e.target.value)}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 pr-8 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-400"
-                    disabled={loadingProviders || requesting}
-                  >
-                    <option value="">Select an institution</option>
-                    {providers.map((provider) => (
-                      <option 
-                        key={provider.address} 
-                        value={provider.address}
-                        className="py-2"
-                      >
-                        {provider.name} ({provider.institution})
-                      </option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
+  
+        {isLoading ? (
+          <div className="space-y-6 sm:space-y-8">
+            <Skeleton height={120} className="rounded-xl" count={3} />
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:gap-8 lg:grid-cols-3">
+            {/* Left Column - Profile and Quick Actions */}
+            <div className="lg:col-span-1 space-y-6 sm:space-y-8">
+              {/* Profile Card */}
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md sm:shadow-lg border border-gray-100">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 mb-3 sm:mb-4 text-blue-600">
+                  <FiUser className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Student Profile
+                </h3>
+                <div className="space-y-3 sm:space-y-4">
+                  <div>
+                    <label className="text-xs sm:text-sm text-gray-500">Full Name</label>
+                    <p className="font-medium text-sm sm:text-base text-gray-900">{profile.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs sm:text-sm text-gray-500">Email Address</label>
+                    <p className="font-medium text-sm sm:text-base text-gray-900 break-all">{profile.email || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs sm:text-sm text-gray-500">Student ID</label>
+                    <p className="font-medium text-sm sm:text-base text-gray-900">{profile.studentId || 'N/A'}</p>
+                  </div>
                 </div>
-                {loadingProviders && (
-                  <p className="text-sm text-gray-500 mt-1">Loading institutions...</p>
-                )}
-                {!loadingProviders && providers.length === 0 && (
-                  <p className="text-sm text-red-500 mt-1">No authorized institutions available</p>
-                )}
               </div>
-
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Certificate Title:</label>
-                <input
-                  type="text"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  value={certificateName}
-                  onChange={(e) => setCertificateName(e.target.value)}
-                  placeholder="Enter certificate title"
-                  disabled={requesting}
-                />
+  
+              {/* Quick Stats Card */}
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md sm:shadow-lg border border-gray-100">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 mb-3 sm:mb-4 text-purple-600">
+                  <FiAward className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Academic Stats
+                </h3>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                  <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+                    <div className="text-xl sm:text-2xl font-bold text-blue-600">{certificates.length}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Certificates</div>
+                  </div>
+                  <div className="text-center p-3 sm:p-4 bg-purple-50 rounded-lg">
+                    <div className="text-xl sm:text-2xl font-bold text-purple-600">{providers.length}</div>
+                    <div className="text-xs sm:text-sm text-gray-600">Institutions</div>
+                  </div>
+                </div>
               </div>
-
-              <div>
-                <label className="block font-medium text-gray-700 mb-1">Additional Notes:</label>
-                <textarea
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[100px]"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Include any additional information (optional)"
-                  disabled={requesting}
-                />
-              </div>
-
-              <button
-                onClick={handleRequestCertificate}
-                disabled={requesting || !selectedProvider || !certificateName}
-                className={`w-full bg-blue-600 text-white font-semibold px-6 py-2 rounded-md shadow hover:bg-blue-700 transition disabled:bg-blue-300 disabled:cursor-not-allowed ${
-                  requesting ? 'opacity-75' : ''
-                }`}
-              >
-                {requesting ? (
-                  <span className="flex items-center justify-center">
-                    <svg 
-                      className="animate-spin h-5 w-5 mr-3 text-white" 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24"
-                    >
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing Request...
-                  </span>
-                ) : (
-                  'Submit Certificate Request'
-                )}
-              </button>
             </div>
-          </section>
-          {/* Certificate Search Section
-          <section className="mt-8">
-            <h3 className="text-lg font-semibold text-blue-600 mb-4 pl-2 border-l-4 border-blue-300">Verify Certificates</h3>
-            <CertificateSearch />
-          </section> */}
-        </>
-      )}
+  
+            {/* Right Column - Certificates and Request Form */}
+            <div className="lg:col-span-2 space-y-6 sm:space-y-8">
+              {/* Certificates Card */}
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md sm:shadow-lg border border-gray-100">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 text-green-600 mb-2 sm:mb-0">
+                    <FiBook className="w-4 h-4 sm:w-5 sm:h-5" />
+                    My Certificates
+                  </h3>
+                  <span className="bg-green-100 text-green-800 px-2 py-1 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm">
+                    {certificates.length} issued
+                  </span>
+                </div>
+  
+                {certificates.length === 0 ? (
+                  <div className="text-center py-4 sm:py-6">
+                    <div className="text-gray-400 mb-1 sm:mb-2 text-sm sm:text-base">No certificates found</div>
+                    <p className="text-xs sm:text-sm text-gray-500">Request your first certificate below</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:gap-4">
+                    {certificates.map((cert) => (
+                      <div
+                        key={cert.id}
+                        className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-gray-50 hover:bg-blue-50 rounded-lg sm:rounded-xl transition-all border border-gray-200"
+                      >
+                        <div className="mb-2 sm:mb-0">
+                          <div className="font-semibold text-sm sm:text-base text-gray-900">{cert.name}</div>
+                          <div className="text-xs sm:text-sm text-gray-600">
+                            Issued by {cert.institute} •{' '}
+                            {new Date(cert.issueDate * 1000).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <a
+                          href={`https://explorer.execution.testnet.lukso.network/token/${process.env.NEXT_PUBLIC_CERTIFICATE_NFT_ADDRESS}/instance/${cert.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full sm:w-auto flex items-center justify-center gap-1 sm:gap-2 text-blue-600 hover:text-blue-800 px-3 py-2 rounded-lg bg-white shadow-sm hover:shadow-md transition-all text-xs sm:text-sm"
+                        >
+                          <FiExternalLink className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <span>View</span>
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+  
+              {/* Request Form Card */}
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-md sm:shadow-lg border border-gray-100">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2 mb-4 sm:mb-6 text-orange-600">
+                  <FiSend className="w-4 h-4 sm:w-5 sm:h-5" />
+                  New Certificate Request
+                </h3>
+  
+                <div className="space-y-4 sm:space-y-6">
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                      Select Institution
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={selectedProvider}
+                        onChange={(e) => setSelectedProvider(e.target.value)}
+                        className="w-full pl-3 pr-8 sm:pl-4 sm:pr-10 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none transition-all"
+                        disabled={loadingProviders || requesting}
+                      >
+                        <option value="">Choose an institution...</option>
+                        {providers.map((provider) => (
+                          <option
+                            key={provider.address}
+                            value={provider.address}
+                            className="py-1 sm:py-2 text-xs sm:text-sm"
+                          >
+                            {provider.name} ({provider.institution})
+                          </option>
+                        ))}
+                      </select>
+                      <FiChevronDown className="absolute right-2 sm:right-3 top-2 sm:top-3 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    {loadingProviders && (
+                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm text-gray-500">Loading institutions...</div>
+                    )}
+                  </div>
+  
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                      Certificate Title
+                    </label>
+                    <input
+                      type="text"
+                      value={certificateName}
+                      onChange={(e) => setCertificateName(e.target.value)}
+                      placeholder="e.g., Bachelor of Science in Computer Science"
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      disabled={requesting}
+                    />
+                  </div>
+  
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
+                      Additional Notes
+                    </label>
+                    <textarea
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Add any special instructions or comments..."
+                      className="w-full px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-24 sm:h-32 transition-all"
+                      disabled={requesting}
+                    />
+                  </div>
+  
+                  <button
+                    onClick={handleRequestCertificate}
+                    disabled={requesting || !selectedProvider || !certificateName}
+                    className="w-full flex items-center justify-center gap-1 sm:gap-2 px-4 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg sm:rounded-xl transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {requesting ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <FiSend className="w-3 h-3 sm:w-4 sm:h-4" />
+                        Submit Request
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default StudentDashboard;
+}
+  export default StudentDashboard;

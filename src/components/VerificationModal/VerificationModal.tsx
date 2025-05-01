@@ -31,65 +31,71 @@ const VerificationModal = ({ certificate, onClose }: { certificate: Certificate,
   }, [certificate]);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 relative">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-[95vw] md:max-w-2xl p-3 md:p-6 relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+          className="sticky top-2 right-2 ml-auto bg-white rounded-full p-1 shadow-sm text-gray-500 hover:text-gray-700 text-xl"
         >
           ✕
         </button>
 
         {isVerified === true ? (
-          <div className="text-center mb-6">
-            <FiCheckCircle className="text-4xl text-green-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-gray-900">Certificate Verified</h3>
-            <p className="text-gray-600 mt-2">This certificate has been successfully verified on the blockchain</p>
+          <div className="text-center mb-4 md:mb-6">
+            <FiCheckCircle className="text-3xl md:text-4xl text-green-500 mx-auto mb-3 md:mb-4" />
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900">Certificate Verified</h3>
+            <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">
+              This certificate has been successfully verified on the blockchain
+            </p>
           </div>
         ) : (
-          <div className="text-center mb-6">
+          <div className="text-center mb-4 md:mb-6">
             {loadingVerification ? (
               <>
-                <FiClock className="text-4xl text-yellow-500 mx-auto mb-4 animate-pulse" />
-                <h3 className="text-2xl font-bold text-gray-900">Verifying Certificate</h3>
-                <p className="text-gray-600 mt-2">Checking institute authorization status...</p>
+                <FiClock className="text-3xl md:text-4xl text-yellow-500 mx-auto mb-3 md:mb-4 animate-pulse" />
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900">Verifying Certificate</h3>
+                <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">
+                  Checking institute authorization status...
+                </p>
               </>
             ) : (
               <>
-                <FiXCircle className="text-4xl text-red-500 mx-auto mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900">Verification Failed</h3>
-                <p className="text-gray-600 mt-2">Issuing institute is not authorized</p>
+                <FiXCircle className="text-3xl md:text-4xl text-red-500 mx-auto mb-3 md:mb-4" />
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900">Verification Failed</h3>
+                <p className="text-sm md:text-base text-gray-600 mt-1 md:mt-2">
+                  Issuing institute is not authorized
+                </p>
               </>
             )}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
+          <div className="space-y-2 md:space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Certificate Name</label>
-              <p className="text-gray-900">{certificate.name}</p>
+              <label className="text-xs md:text-sm font-medium text-gray-500">Certificate Name</label>
+              <p className="text-sm md:text-base text-gray-900 break-words">{certificate.name}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Issuing Institute</label>
+              <label className="text-xs md:text-sm font-medium text-gray-500">Issuing Institute</label>
               <div className="mt-1">
-                <p className="text-gray-900">{certificate.institute}</p>
+                <p className="text-sm md:text-base text-gray-900 break-words">{certificate.institute}</p>
                 {certificate.metadata?.institution?.address && (
                   <div className="mt-2 flex items-center gap-2">
                     {loadingVerification ? (
                       <>
-                        <FiClock className="text-yellow-500 animate-pulse" />
-                        <span className="text-sm text-yellow-600">Verifying institution...</span>
+                        <FiClock className="text-yellow-500 animate-pulse text-sm md:text-base" />
+                        <span className="text-xs md:text-sm text-yellow-600">Verifying institution...</span>
                       </>
                     ) : isVerified ? (
                       <>
-                        <FiCheckCircle className="text-green-500" />
-                        <span className="text-sm text-green-600">Verified Institution</span>
+                        <FiCheckCircle className="text-green-500 text-sm md:text-base" />
+                        <span className="text-xs md:text-sm text-green-600">Verified Institution</span>
                       </>
                     ) : (
                       <>
-                        <FiXCircle className="text-red-500" />
-                        <span className="text-sm text-red-600">Unverified Institution</span>
+                        <FiXCircle className="text-red-500 text-sm md:text-base" />
+                        <span className="text-xs md:text-sm text-red-600">Unverified Institution</span>
                       </>
                     )}
                   </div>
@@ -97,47 +103,49 @@ const VerificationModal = ({ certificate, onClose }: { certificate: Certificate,
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Issue Date</label>
-              <p className="text-gray-900">
+              <label className="text-xs md:text-sm font-medium text-gray-500">Issue Date</label>
+              <p className="text-sm md:text-base text-gray-900">
                 {new Date(certificate.issueDate * 1000).toLocaleDateString()}
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-2 md:space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Certificate Type</label>
-              <p className="text-gray-900">{certificate.certificateType}</p>
+              <label className="text-xs md:text-sm font-medium text-gray-500">Certificate Type</label>
+              <p className="text-sm md:text-base text-gray-900 break-words">{certificate.certificateType}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Institute Address</label>
-              <p className="text-gray-900 break-all">
-                  {certificate.metadata?.institution?.address || 'N/A'}
+              <label className="text-xs md:text-sm font-medium text-gray-500">Institute Address</label>
+              <p className="text-[10px] md:text-sm text-gray-900 break-all font-mono">
+                {certificate.metadata?.institution?.address || 'N/A'}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">Certificate ID</label>
-              <p className="text-gray-900">{certificate.id}</p>
+              <label className="text-xs md:text-sm font-medium text-gray-500">Certificate ID</label>
+              <p className="text-sm md:text-base text-gray-900 break-words">{certificate.id}</p>
             </div>
           </div>
         </div>
 
         {certificate.metadata?.image && (
-          <div className="mt-6 border-t border-gray-100 pt-6">
-            <label className="text-sm font-medium text-gray-500 block mb-4">Certificate Preview</label>
+          <div className="mt-4 md:mt-6 border-t border-gray-100 pt-4 md:pt-6">
+            <label className="text-xs md:text-sm font-medium text-gray-500 block mb-2 md:mb-4">
+              Certificate Preview
+            </label>
             <img
               src={certificate.metadata.image.startsWith('ipfs://') 
                 ? `https://gateway.pinata.cloud/ipfs/${certificate.metadata.image.split('ipfs://')[1]}`
                 : certificate.metadata.image}
               alt="Certificate preview"
-              className="rounded-lg border border-gray-200 mx-auto max-h-48"
+              className="rounded-lg border border-gray-200 mx-auto max-h-32 md:max-h-48 w-full object-contain"
             />
           </div>
         )}
 
         <button
           onClick={onClose}
-          className="mt-6 w-full bg-[#8A2BE2] text-white py-2 px-4 rounded-lg hover:bg-[#6A1EBA] transition-colors"
+          className="sticky bottom-0 mt-4 md:mt-6 w-full bg-[#8A2BE2] text-white py-2 px-4 rounded-lg hover:bg-[#6A1EBA] transition-colors text-sm md:text-base shadow-lg"
         >
           Close
         </button>
