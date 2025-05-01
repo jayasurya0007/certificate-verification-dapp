@@ -3,7 +3,8 @@ import { useContractContext } from '@/contexts/ContractContext';
 import { useEthereum } from '@/contexts/EthereumContext';
 import { RegisteredUser } from '@/contexts/ContractContext';
 import { ethers } from 'ethers';
-import { FiFile, FiExternalLink, FiSearch, FiShield, FiCheck, FiX } from 'react-icons/fi';
+import { FiFile,FiUser, FiExternalLink, FiSearch, FiShield, FiCheck, FiX } from 'react-icons/fi';
+import UserDashboard from '../Dashboard/UserDashboard';
 
 const OwnerDashboard = () => {
   const { account } = useEthereum();
@@ -379,6 +380,21 @@ const OwnerDashboard = () => {
             </div>
           </div>
         </div>
+        
+        {/* Add this section at the end */}
+        <div className="mt-12">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+            <div className="px-6 py-5 border-b border-gray-100">
+              <h2 className="text-xl font-semibold flex items-center gap-3">
+                <FiUser className="h-5 w-5 text-blue-600" />
+                User Management
+              </h2>
+            </div>
+            <div className="p-6 max-w-6xl mx-auto overflow-auto">
+              <UserDashboard />
+            </div>
+          </div>
+        </div>
 
         {/* Status Messages */}
         {message && (
@@ -398,6 +414,7 @@ const OwnerDashboard = () => {
           </div>
         )}
       </div>
+      
     </div>
   );
 };
