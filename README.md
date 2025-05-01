@@ -58,7 +58,3 @@ Before you begin, ensure you have the following installed:
 
    ```bash
    npx next dev
-
-  
-
-
