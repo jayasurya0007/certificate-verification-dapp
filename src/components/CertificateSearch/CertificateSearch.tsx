@@ -72,7 +72,7 @@ const CertificateSearch = () => {
   };
 
   const convertIpfsUrl = (url: string) =>
-    url.startsWith('ipfs://') ? `https://ipfs.io/ipfs/${url.split('ipfs://')[1]}` : url;
+    url.startsWith('ipfs://') ? `https://gateway.pinata.cloud/ipfs/${url.split('ipfs://')[1]}` : url;
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-100 mt-12">

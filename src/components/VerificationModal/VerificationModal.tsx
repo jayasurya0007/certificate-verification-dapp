@@ -59,7 +59,7 @@ const VerificationModal = ({ certificate, onClose }: { certificate: Certificate,
               <label className="text-sm font-medium text-gray-500 block mb-4">Certificate Preview</label>
               <img
                 src={certificate.metadata.image.startsWith('ipfs://') 
-                  ? `https://ipfs.io/ipfs/${certificate.metadata.image.split('ipfs://')[1]}`
+                  ? `https://gateway.pinata.cloud/ipfs/${certificate.metadata.image.split('ipfs://')[1]}`
                   : certificate.metadata.image}
                 alt="Certificate preview"
                 className="rounded-lg border border-gray-200 mx-auto max-h-48"

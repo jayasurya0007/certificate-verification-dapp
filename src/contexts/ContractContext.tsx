@@ -274,12 +274,21 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
         const tokenURI = await contract.tokenURI(id);
 
         let metadata = null;
+        const metadataHash = tokenURI.replace('ipfs://', '');
+
         try {
-          const metadataHash = tokenURI.replace('ipfs://', '');
-          const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+          let response = await fetch(`https://gateway.pinata.cloud/ipfs/${metadataHash}`);
+          if (!response.ok) throw new Error('Pinata fetch failed');
           metadata = await response.json();
         } catch (err) {
-          console.error('Metadata fetch error:', err);
+          console.warn('Pinata failed, trying ipfs.io:', err);
+          try {
+            const fallbackResponse = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+            if (!fallbackResponse.ok) throw new Error('ipfs.io fetch failed');
+            metadata = await fallbackResponse.json();
+          } catch (fallbackErr) {
+            console.error('Metadata fetch error:', fallbackErr);
+          }
         }
 
         return {
@@ -378,10 +387,17 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
   const fetchStudentMetadata = async (studentAddress: string, metadataHash: string): Promise<StudentMetadata | null> => {
     if (!metadataHash) return null;
     try {
-      const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+      const response = await fetch(`https://gateway.pinata.cloud/ipfs/${metadataHash}`);
+      if (!response.ok) throw new Error('Pinata fetch failed');
       return await response.json();
     } catch {
-      return null;
+      try {
+        const fallbackResponse = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+        if (!fallbackResponse.ok) throw new Error('IPFS.io fetch failed');
+        return await fallbackResponse.json();
+      } catch {
+        return null;
+      }
     }
   };
 
@@ -390,10 +406,23 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
     const signer = await provider.getSigner();
     const registryContract = new ethers.Contract(userRegistryAddress, UserRegistryABI.abi, signer);
     const [, metadataHash] = await registryContract.getUser(address);
-    if (metadataHash) {
-      const response = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+    if (!metadataHash) return null;
+    try {
+      const response = await fetch(`https://gateway.pinata.cloud/ipfs/${metadataHash}`);
+      if (!response.ok) throw new Error('Pinata fetch failed');
       return await response.json();
+    } catch (err) {
+      console.warn('Pinata failed, falling back to ipfs.io:', err);
+      try {
+        const fallbackResponse = await fetch(`https://ipfs.io/ipfs/${metadataHash}`);
+        if (!fallbackResponse.ok) throw new Error('ipfs.io fetch failed');
+        return await fallbackResponse.json();
+      } catch (fallbackErr) {
+        console.error('Metadata fetch failed on both gateways:', fallbackErr);
+        return null;
+      }
     }
+
     return null;
   };
 
@@ -433,11 +462,17 @@ export const ContractContextProvider = ({ children }: ContractContextProviderPro
     try {
       const contract = getContract(provider);
       if (!contract) throw new Error('User Registry contract not initialized');
+    
       const [, ipfsHash] = await contract.getUser(address);
       if (!ipfsHash) return null;
-
-      const response = await fetch(`https://ipfs.io/ipfs/${ipfsHash}`);
-      if (!response.ok) throw new Error('Failed to fetch profile metadata');
+    
+      let response = await fetch(`https://gateway.pinata.cloud/ipfs/${ipfsHash}`);
+      if (!response.ok) {
+        console.warn('Pinata failed, trying ipfs.io...');
+        response = await fetch(`https://ipfs.io/ipfs/${ipfsHash}`);
+        if (!response.ok) throw new Error('Both gateways failed to fetch profile metadata');
+      }
+    
       const data = await response.json();
       return data;
     } catch (error) {

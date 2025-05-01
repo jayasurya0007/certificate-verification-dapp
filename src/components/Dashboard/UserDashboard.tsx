@@ -96,7 +96,7 @@ export default function UserDashboard() {
             <p className="break-all">
               <span className="font-medium">Metadata:</span>{' '}
               <a
-                href={`https://ipfs.io/ipfs/${selectedUser.metadataHash}`}
+                href={`https://gateway.pinata.cloud/ipfs/${selectedUser.metadataHash}` || `https://ipfs.io/ipfs/${selectedUser.metadataHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
