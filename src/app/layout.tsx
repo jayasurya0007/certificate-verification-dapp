@@ -17,9 +17,9 @@ export default function RootLayout({
   return (
     <div>
       <Head>
-        <title>{config.metadata.title}</title>
-        <meta name="description" content={config.metadata.description} />
-        <link rel="icon" href="/images/favicon.ico" sizes="any" />
+        <title>ANTI-FAKE</title>
+        <meta name="description" content="AntiFake-Certification Verification Platform" />
+        <link rel="icon" href="/images/anti_fake.png" sizes="any" />
       </Head>
       <div>{children}</div>
     </div>
